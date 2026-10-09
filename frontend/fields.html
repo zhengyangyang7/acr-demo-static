@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<script src="./ams-role.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>字段维护 - 企业资产管理系统</title>
+<link rel="stylesheet" href="./lib/element-plus.index.css">
+<script src="./lib/vue.global.prod.js"></script>
+<script src="./lib/element-plus.index.full.min.js"></script>
+<script src="./lib/element-plus-zh-cn.min.js"></script>
+<script src="./ams-ep-zh.js"></script>
+<script src="./lib/element-plus-icons.iife.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;background:#f0f2f5}
+
+/* 侧边栏 */
+.sidebar{width:220px;height:100vh;max-height:100vh;overflow:hidden;background:#243038;position:fixed;left:0;top:0;z-index:100;box-shadow:2px 0 12px rgba(0,0,0,.15);display:flex;flex-direction:column}
+.sidebar-logo{padding:20px 16px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.logo-icon{width:36px;height:36px;background:#1a6b5c;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.logo-text{color:#fff;font-size:14px;font-weight:600;line-height:1.3}
+.logo-sub{color:rgba(255,255,255,.5);font-size:11px}
+.nav-menu{flex:1;min-height:0;padding:8px 0;overflow-y:auto}
+.nav-item,a.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:rgba(255,255,255,.65);cursor:pointer;font-size:13px;border-radius:0;transition:all .2s;margin:1px 8px;border-radius:8px;font-family:inherit;text-decoration:none}
+.nav-item:hover,a.nav-item:hover{color:#fff;background:rgba(255,255,255,.08)}
+.nav-item.active,a.nav-item.active{color:#fff;background:rgba(26,107,92,0.72)}
+.nav-icon{font-size:16px;width:18px;text-align:center}
+.nav-group-title{padding:12px 20px 4px;color:rgba(255,255,255,.3);font-size:11px;letter-spacing:1px;text-transform:uppercase}
+
+/* 主内容 */
+.layout{display:flex;min-height:100vh}
+.main{margin-left:220px;padding:24px;width:calc(100% - 220px)}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding:0 4px}
+.topbar-title{font-size:20px;font-weight:600;color:#1a1f35}
+
+/* 卡片 */
+.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.card-title{font-size:16px;font-weight:600;color:#1a1f35;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:8px}
+
+/* 标签页 */
+.type-tabs{margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap}
+.type-tab{padding:8px 16px;border-radius:6px;cursor:pointer;border:1px solid #d9d9d9;background:#fff;transition:all .2s;font-size:13px}
+.type-tab:hover{border-color:#1a6b5c;color:#1a6b5c}
+.type-tab.active{background:#1a6b5c;color:#fff;border-color:#1a6b5c}
+
+/* 表格 */
+.option-table{width:100%;border-collapse:collapse}
+.option-table th{text-align:left;padding:12px 16px;background:#fafafa;border-bottom:1px solid #f0f0f0;color:#666;font-weight:500;font-size:13px}
+.option-table td{padding:12px 16px;border-bottom:1px solid #f5f5f5;vertical-align:middle}
+.option-table tr:hover{background:#fafafa}
+.option-table .color-dot{width:12px;height:12px;border-radius:50%;display:inline-block;flex-shrink:0}
+.option-table .name-cell{display:flex;align-items:center;gap:8px}
+.option-table .code{color:#8c8c8c;font-size:12px;font-family:monospace}
+.option-table .actions{display:flex;gap:8px}
+.option-table .status-tag{padding:2px 8px;border-radius:4px;font-size:12px}
+.option-table .status-active{background:#f6ffed;border:1px solid #b7eb8f;color:#52c41a}
+.option-table .status-inactive{background:#f5f5f5;border:1px solid #d9d9d9;color:#8c8c8c}
+.option-table tr.row-inactive{opacity:.5;background:#fafafa}
+.option-table tr.row-inactive:hover{background:#f5f5f5}
+
+/* 颜色选择 */
+.color-picker{display:flex;align-items:center;gap:8px}
+.color-preview{width:24px;height:24px;border-radius:4px;border:1px solid #d9d9d9;cursor:pointer}
+.color-input{width:80px;border:1px solid #d9d9d9;border-radius:4px;padding:4px 8px;font-size:12px}
+
+/* 搜索 */
+.search-row{display:flex;gap:12px;margin-bottom:16px;align-items:center}
+.search-input{flex:1;max-width:300px}
+
+/* 空状态 */
+.empty-state{text-align:center;padding:60px 20px;color:#8c8c8c}
+.empty-icon{font-size:48px;margin-bottom:16px}
+/* 嵌入模式 */
+body.embed .sidebar, body.embed .topbar{display:none !important}
+body.embed .layout{display:block}
+body.embed .main{margin-left:0;width:100%;padding:12px}
+body.embed .card{margin-bottom:0;box-shadow:none}
+.card{overflow-x:auto;max-width:100%}
+.desktop-only{display:table}
+.mobile-only{display:none}
+.field-mobile-list{display:flex;flex-direction:column;gap:10px}
+.field-m-card{
+  border:1px solid #e8e8e8;border-radius:10px;padding:12px 14px;background:#fafafa;
+}
+.field-m-card.inactive{opacity:.55}
+.field-m-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.field-m-name{font-size:14px;font-weight:600;color:#1a1f35;display:flex;align-items:center;gap:8px}
+.field-m-code{font-size:12px;color:#8c8c8c;font-family:monospace;margin-bottom:6px}
+.field-m-meta{font-size:12px;color:#666;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.field-m-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.field-m-actions .el-button{flex:0 0 auto;width:auto!important}
+@media (max-width:768px){
+  html,body{overflow-x:hidden;max-width:100vw}
+  .sidebar{display:none!important}
+  .main{margin-left:0!important;width:100%!important;padding:12px}
+  .topbar{flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .topbar-title{font-size:17px}
+  .topbar .el-button{width:auto!important;flex:0 0 auto}
+  .search-input{max-width:100%!important;width:100%}
+  .search-row{flex-direction:column;align-items:stretch}
+  .search-row .el-button,.search-row .el-switch{width:100%}
+  .type-tabs{gap:6px}
+  .type-tab{padding:8px 10px;font-size:12px;flex:1 1 calc(50% - 6px);text-align:center}
+  .card{padding:14px}
+  .desktop-only{display:none!important}
+  .mobile-only{display:flex!important;flex-direction:column}
+  .option-table{display:none!important}
+  .el-dialog{width:calc(100vw - 24px)!important;max-width:calc(100vw - 24px)!important;margin:12px auto!important}
+}
+</style>
+<script src="./auth-guard.js"></script>
+</head>
+<body>
+<script>if(location.search.indexOf('embed=1')>-1)document.body.className='embed';</script>
+<div id="app">
+  <div class="layout">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">📦</div>
+        <div>
+          <div class="logo-text">资产管理系统</div>
+          <div class="logo-sub">Asset Management</div>
+        </div>
+      </div>
+      <nav class="nav-menu">
+        <div class="nav-group-title">概览</div>
+        <a href="index.html" class="nav-item"><span class="nav-icon">📊</span><span>仪表盘</span></a>
+        <div class="nav-group-title">快速操作</div>
+        <a href="stock.html" class="nav-item"><span class="nav-icon">📦</span><span>出入库</span></a>
+        <a href="repair.html" class="nav-item"><span class="nav-icon">🔧</span><span>报修</span></a>
+        <a href="dispose.html" class="nav-item"><span class="nav-icon">🗑️</span><span>资产处理</span></a>
+        <div class="nav-group-title">固定资产</div>
+        <a href="index.html" class="nav-item"><span class="nav-icon">🖥️</span><span>资产台账</span></a>
+        <a href="index.html" class="nav-item"><span class="nav-icon">📋</span><span>出入库记录</span></a>
+        <a href="index.html" class="nav-item"><span class="nav-icon">🔧</span><span>维修管理</span></a>
+        <a href="index.html" class="nav-item"><span class="nav-icon">🗑️</span><span>资产处理记录</span></a>
+        <div class="nav-group-title">耗材管理</div>
+        <a href="index.html" class="nav-item"><span class="nav-icon">🧪</span><span>耗材台账</span></a>
+        <a href="index.html" class="nav-item"><span class="nav-icon">📦</span><span>耗材领用记录</span></a>
+        <div class="nav-group-title">管理</div>
+        <a href="approval.html" class="nav-item"><span class="nav-icon">📋</span><span>审批中心</span></a>
+        <a href="inventory.html" class="nav-item"><span class="nav-icon">📦</span><span>资产盘点</span></a>
+        <div class="nav-group-title">采购</div>
+        <a href="orders.html" class="nav-item"><span class="nav-icon">🛒</span><span>采购订单</span></a>
+        <div class="nav-group-title">配置</div>
+        <div class="nav-item active"><span class="nav-icon">🔧</span><span>字段维护</span></div>
+        <a href="index.html" class="nav-item"><span class="nav-icon">👥</span><span>用户管理</span></a>
+        <a href="index.html" class="nav-item"><span class="nav-icon">🔔</span><span>飞书通知</span></a>
+        <a href="index.html" class="nav-item"><span class="nav-icon">⚙️</span><span>系统设置</span></a>
+      </nav>
+    </aside>
+
+    <!-- 主内容 -->
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-title">字段维护</div>
+        <el-button type="primary" :icon="Plus" @click="openCreate">新增选项</el-button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>📋</span> 选项配置
+        </div>
+
+        <!-- 类型切换 -->
+        <div class="type-tabs">
+          <div
+            v-for="t in fieldTypes"
+            :key="t.type"
+            class="type-tab"
+            :class="{active: currentType === t.type}"
+            @click="switchType(t.type)"
+          >
+            <span>{{ t.icon }}</span> {{ t.name }}
+            <span style="opacity:.6;font-size:11px">({{ getTypeCount(t.type) }})</span>
+          </div>
+        </div>
+
+        <!-- 搜索 -->
+        <div class="search-row">
+          <el-input
+            v-model="keyword"
+            placeholder="搜索代码或名称"
+            clearable
+            @input="filterOptions"
+            class="search-input"
+          >
+            <template #prefix><el-icon><Search /></el-icon></template>
+          </el-input>
+          <el-button :icon="Refresh" @click="loadOptions">刷新</el-button>
+          <el-switch
+            v-if="isSuperAdmin"
+            v-model="showInactive"
+            active-text="显示已停用"
+            @change="filterOptions"
+            style="margin-left:4px"
+          />
+        </div>
+
+        <!-- 选项列表 -->
+        <div v-loading="loading">
+          <table class="option-table desktop-only" v-if="filteredOptions.length > 0">
+            <thead>
+              <tr>
+                <th style="width:120px">代码</th>
+                <th>名称</th>
+                <th style="width:100px">颜色</th>
+                <th style="width:80px">排序</th>
+                <th style="width:80px">状态</th>
+                <th style="width:120px">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="opt in filteredOptions" :key="opt.id" :class="{'row-inactive': !opt.active}">
+                <td><span class="code">{{ opt.field_code }}</span></td>
+                <td>
+                  <div class="name-cell">
+                    <span v-if="opt.color" class="color-dot" :style="{background: opt.color}"></span>
+                    <span>{{ opt.field_name }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="color-picker">
+                    <div class="color-preview" :style="{background: opt.color || '#d9d9d9'}"></div>
+                    <span style="font-size:12px;color:#8c8c8c">{{ opt.color || '-' }}</span>
+                  </div>
+                </td>
+                <td>{{ opt.sort_order }}</td>
+                <td>
+                  <span class="status-tag" :class="opt.active ? 'status-active' : 'status-inactive'">
+                    {{ opt.active ? '启用' : '停用' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="actions">
+                    <el-button size="small" link type="primary" @click="openEdit(opt)">编辑</el-button>
+                    <el-button size="small" link type="danger" @click="deleteOption(opt)" :loading="deleting === opt.id">
+                      {{ opt.active ? '停用' : '启用' }}
+                    </el-button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="field-mobile-list mobile-only" v-if="filteredOptions.length > 0">
+            <div class="field-m-card" v-for="opt in filteredOptions" :key="'m-'+opt.id" :class="{inactive: !opt.active}">
+              <div class="field-m-top">
+                <div class="field-m-name">
+                  <span v-if="opt.color" class="color-dot" :style="{background: opt.color}"></span>
+                  {{ opt.field_name }}
+                </div>
+                <span class="status-tag" :class="opt.active ? 'status-active' : 'status-inactive'">
+                  {{ opt.active ? '启用' : '停用' }}
+                </span>
+              </div>
+              <div class="field-m-code">{{ opt.field_code }}</div>
+              <div class="field-m-meta">
+                <span>排序 {{ opt.sort_order }}</span>
+                <span v-if="opt.color">颜色 {{ opt.color }}</span>
+              </div>
+              <div class="field-m-actions">
+                <el-button size="small" type="primary" @click="openEdit(opt)">编辑</el-button>
+                <el-button size="small" :type="opt.active ? 'danger' : 'success'" plain @click="deleteOption(opt)" :loading="deleting === opt.id">
+                  {{ opt.active ? '停用' : '启用' }}
+                </el-button>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="filteredOptions.length === 0" class="empty-state">
+            <div class="empty-icon">📭</div>
+            <div>暂无选项</div>
+            <el-button type="primary" link @click="openCreate" style="margin-top:12px">点击添加</el-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 创建/编辑对话框 -->
+  <el-dialog v-model="dlgVisible" :title="editing ? '编辑选项' : '新增选项'" width="500px" class="field-dlg">
+    <el-form :model="form" label-width="80px" ref="formRef" :rules="rules">
+      <el-form-item label="字段类型">
+        <el-select v-model="form.field_type" placeholder="选择类型" :disabled="!!editing" style="width:100%">
+          <el-option v-for="t in fieldTypes" :key="t.type" :label="t.name" :value="t.type"></el-option>
+        </el-select>
+      </el-form-item>
+      <el-form-item label="选项代码" prop="field_code">
+        <el-input v-model="form.field_code" placeholder="如：DELL、HP（建议英文大写）" />
+      </el-form-item>
+      <el-form-item label="选项名称" prop="field_name">
+        <el-input v-model="form.field_name" placeholder="如：戴尔、惠普" />
+      </el-form-item>
+      <el-form-item label="颜色">
+        <div class="color-picker">
+          <el-color-picker v-model="form.color" show-alpha />
+          <el-input v-model="form.color" placeholder="#ffffff" style="width:120px" />
+        </div>
+      </el-form-item>
+      <el-form-item label="排序">
+        <el-input-number v-model="form.sort_order" :min="0" :max="999" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="dlgVisible = false">取消</el-button>
+      <el-button type="primary" @click="save" :loading="saving">保存</el-button>
+    </template>
+  </el-dialog>
+</div>
+
+<script>
+const { createApp, ref, reactive, computed, onMounted } = Vue;
+const { ElMessage, ElMessageBox } = ElementPlus;
+const { Plus, Search, Refresh, Edit, Delete } = ElementPlusIconsVue;
+const API = '/api';
+
+const app = createApp({
+  setup() {
+    const loading = ref(false);
+    const saving = ref(false);
+    const deleting = ref(null);
+    const keyword = ref('');
+    const currentType = ref('category');
+    const allOptions = ref([]);
+    const filteredOptions = ref([]);
+    const dlgVisible = ref(false);
+    const editing = ref(null);
+    const formRef = ref(null);
+    const showInactive = ref(false);
+    const isSuperAdmin = ref(false);
+
+    // 检查是否超管
+    async function checkRole() {
+      try {
+        const r = await fetch(`${API}/auth/user`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('ams_token')}` }
+        });
+        const d = await r.json();
+        if (d.success && d.user && d.user.role === '超管') {
+          isSuperAdmin.value = true;
+        }
+      } catch (e) {}
+    }
+
+    const fieldTypes = [
+      { type: 'category', name: '资产类别', icon: '🖥️' },
+      { type: 'consumable_category', name: '耗材类别', icon: '🧪' },
+      { type: 'brand', name: '品牌', icon: '🏷️' },
+      { type: 'supplier', name: '供应商', icon: '🏪' },
+      { type: 'unit', name: '单位', icon: '📏' },
+      { type: 'location', name: '存放地', icon: '📍' },
+      { type: 'asset_status', name: '资产状态', icon: '📊' },
+    ];
+
+    const form = reactive({
+      field_type: 'category',
+      field_code: '',
+      field_name: '',
+      color: '',
+      sort_order: 0,
+    });
+
+    const rules = {
+      field_code: [{ required: true, message: '请输入代码', trigger: 'blur' }],
+      field_name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
+    };
+
+    async function loadOptions() {
+      loading.value = true;
+      try {
+        // 超管拉全量（含停用），普通用户只拉启用的
+        const url = isSuperAdmin.value ? `${API}/field-options?include_inactive=1` : `${API}/field-options`;
+        const r = await fetch(url);
+        const d = await r.json();
+        if (d.success) {
+          allOptions.value = d.data;
+          filterOptions();
+        }
+      } catch (e) {
+        ElMessage.error('加载失败');
+      } finally {
+        loading.value = false;
+      }
+    }
+
+    function filterOptions() {
+      const kw = keyword.value.toLowerCase();
+      filteredOptions.value = allOptions.value.filter(o => {
+        if (o.field_type !== currentType.value) return false;
+        if (!showInactive.value && !o.active) return false;
+        if (kw && !o.field_code.toLowerCase().includes(kw) && !o.field_name.includes(kw)) return false;
+        return true;
+      });
+    }
+
+    function switchType(type) {
+      currentType.value = type;
+      form.field_type = type;
+      filterOptions();
+    }
+
+    function getTypeCount(type) {
+      return allOptions.value.filter(o => o.field_type === type && o.active).length;
+    }
+
+    function openCreate() {
+      editing.value = null;
+      Object.assign(form, {
+        field_type: currentType.value,
+        field_code: '',
+        field_name: '',
+        color: '',
+        sort_order: 0,
+      });
+      dlgVisible.value = true;
+    }
+
+    function openEdit(opt) {
+      editing.value = opt;
+      Object.assign(form, {
+        field_type: opt.field_type,
+        field_code: opt.field_code,
+        field_name: opt.field_name,
+        color: opt.color || '',
+        sort_order: opt.sort_order || 0,
+      });
+      dlgVisible.value = true;
+    }
+
+    async function save() {
+      try {
+        await formRef.value.validate();
+      } catch {
+        return;
+      }
+
+      saving.value = true;
+      try {
+        const url = editing.value ? `${API}/field-options/${editing.value.id}` : `${API}/field-options`;
+        const method = editing.value ? 'PUT' : 'POST';
+        const r = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('ams_token')}` },
+          body: JSON.stringify(form),
+        });
+        const d = await r.json();
+        if (d.success) {
+          ElMessage.success(d.message || '保存成功');
+          dlgVisible.value = false;
+          loadOptions();
+        } else {
+          ElMessage.error(d.error || '保存失败');
+        }
+      } catch (e) {
+        ElMessage.error('保存失败');
+      } finally {
+        saving.value = false;
+      }
+    }
+
+    async function deleteOption(opt) {
+      const action = opt.active ? '停用' : '启用';
+      const confirm = await ElMessageBox.confirm(
+        `确定要${action}「${opt.field_name}」吗？`,
+        `${action}确认`,
+        { type: opt.active ? 'warning' : 'info' }
+      ).catch(() => false);
+
+      if (!confirm) return;
+
+      deleting.value = opt.id;
+      try {
+        // 软删除：更新 active 状态
+        const r = await fetch(`${API}/field-options/${opt.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('ams_token')}` },
+          body: JSON.stringify({ ...opt, active: opt.active ? 0 : 1 }),
+        });
+        const d = await r.json();
+        if (d.success) {
+          ElMessage.success(`${action}成功`);
+          loadOptions();
+        } else {
+          ElMessage.error(d.error || '操作失败');
+        }
+      } catch (e) {
+        ElMessage.error('操作失败');
+      } finally {
+        deleting.value = null;
+      }
+    }
+
+    onMounted(async () => {
+      await checkRole();
+      loadOptions();
+    });
+
+    return {
+      loading, saving, deleting, keyword, currentType,
+      allOptions, filteredOptions, dlgVisible, editing, form, formRef, rules,
+      fieldTypes, showInactive, isSuperAdmin,
+      loadOptions, filterOptions, switchType, getTypeCount,
+      openCreate, openEdit, save, deleteOption,
+      Plus, Search, Refresh, Edit, Delete,
+    };
+  }
+});
+
+app.use(ElementPlus, { locale: ElementPlusLocaleZhCn });
+app.use(ElementPlusIconsVue);
+app.mount('#app');
+</script>
+</body>
+</html>

@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<script src="./ams-role.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>资产出入库 - 企业资产管理系统</title>
+<link rel="stylesheet" href="./lib/element-plus.index.css">
+<script src="./lib/vue.global.prod.js"></script>
+<script src="./lib/element-plus.index.full.min.js"></script>
+<script src="./lib/element-plus-zh-cn.min.js"></script>
+<script src="./ams-ep-zh.js"></script>
+<script src="./lib/element-plus-icons.iife.min.js"></script>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f0f2f5; }
+
+.app-container { max-width: 800px; margin: 0 auto; padding: 20px; }
+
+.header {
+  background: #1a6b5c;
+  color: #fff;
+  padding: 24px 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.header h1 { margin: 0 0 8px; font-size: 22px; }
+.header p { margin: 0; opacity: 0.9; font-size: 14px; }
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1f35;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* 步骤条 */
+.steps {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  padding: 0 20px;
+}
+.step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  right: -20px;
+  width: 40px;
+  height: 2px;
+  background: #e0e0e0;
+}
+.step.active:not(:last-child)::after { background: #1a6b5c; }
+.step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.step.active .step-num { background: #1a6b5c; }
+.step-text { font-size: 12px; color: #8c8c8c; }
+.step.active .step-text { color: #1a6b5c; font-weight: 500; }
+
+/* 资产搜索 */
+.search-box { margin-bottom: 16px; }
+.asset-result {
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 12px;
+}
+.asset-result.error {
+  background: #fff1f0;
+  border-color: #ffa39e;
+}
+.asset-result .asset-no { font-size: 18px; font-weight: 600; color: #1a1f35; margin-bottom: 8px; }
+.asset-result .asset-info { font-size: 14px; color: #595959; line-height: 1.8; }
+
+/* 表单 */
+.form-row { display: flex; gap: 16px; margin-bottom: 16px; }
+.form-row .el-form-item { flex: 1; margin-bottom: 0; }
+@media (max-width: 600px) {
+  .form-row { flex-direction: column; gap: 0; }
+  .form-row .el-form-item { margin-bottom: 16px; }
+}
+@media (max-width: 768px) {
+  html, body { overflow-x: hidden; max-width: 100vw; }
+  .app-container { padding: 12px; max-width: 100%; }
+}
+
+/* 照片上传 */
+.photo-upload {
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.photo-upload:hover { border-color: #1a6b5c; }
+.photo-upload.has-files { border-color: #52c41a; background: #f6ffed; }
+.photo-upload .upload-icon { font-size: 32px; color: #bfbfbf; margin-bottom: 8px; }
+.photo-upload .upload-text { color: #595959; font-size: 14px; }
+.photo-upload .upload-hint { color: #8c8c8c; font-size: 12px; margin-top: 4px; }
+
+.photo-preview-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.photo-preview-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+.photo-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.photo-preview-item .remove-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 操作类型选择 */
+.op-type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+@media (max-width: 480px) {
+  .op-type-grid { grid-template-columns: 1fr; }
+}
+.op-type-item {
+  padding: 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.op-type-item:hover { border-color: #1a6b5c; }
+.op-type-item.active {
+  border-color: #1a6b5c;
+  background: #1a6b5c;
+  color: #fff;
+}
+.op-type-item .icon { font-size: 28px; margin-bottom: 8px; }
+.op-type-item .label { font-size: 14px; font-weight: 500; }
+
+/* 提交按钮 */
+.submit-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  border-radius: 8px;
+}
+
+/* 底部导航 */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0;
+  z-index: 100;
+}
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 16px;
+  color: #8c8c8c;
+  text-decoration: none;
+  font-size: 12px;
+}
+.bottom-nav-item.active { color: #1a6b5c; }
+.bottom-nav-item .icon { font-size: 20px; margin-bottom: 2px; }
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #1a6b5c;
+  text-decoration: none;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+.back-link:hover { opacity: 0.8; }
+
+/* 成功提示 */
+.success-box {
+  text-align: center;
+  padding: 40px 20px;
+}
+.success-box .success-icon {
+  width: 80px;
+  height: 80px;
+  background: #52c41a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  color: #fff;
+  margin: 0 auto 20px;
+}
+.success-box h2 { margin: 0 0 8px; color: #1a1f35; }
+.success-box p { margin: 0; color: #8c8c8c; }
+</style>
+<script src="./auth-guard.js"></script>
+</head>
+<body>
+<div id="app">
+  <div class="app-container" style="padding-bottom: 80px;">
+    <a href="index.html" class="back-link" id="backLink" onclick="window.location.href='/main.html';return false;">← 返回首页</a>
+
+    <div class="header">
+      <h1>📦 资产出入库</h1>
+      <p>扫描或搜索资产，快速完成出入库操作</p>
+    </div>
+
+    <!-- 步骤条 -->
+    <div class="steps">
+      <div class="step" :class="{active: step>=1}">
+        <div class="step-num">1</div>
+        <div class="step-text">选择操作</div>
+      </div>
+      <div class="step" :class="{active: step>=2}">
+        <div class="step-num">2</div>
+        <div class="step-text">选择资产</div>
+      </div>
+      <div class="step" :class="{active: step>=3}">
+        <div class="step-num">3</div>
+        <div class="step-text">填写信息</div>
+      </div>
+    </div>
+
+    <!-- 步骤1: 选择操作类型 -->
+    <div v-if="step===1" class="card">
+      <div class="card-title">选择操作类型</div>
+      <div class="op-type-grid">
+        <div class="op-type-item" :class="{active: form.log_type==='出库'}" @click="selectOpType('出库')">
+          <div class="icon">🚀</div>
+          <div class="label">出库</div>
+        </div>
+        <div class="op-type-item" :class="{active: form.log_type==='归还'}" @click="selectOpType('归还')">
+          <div class="icon">↩️</div>
+          <div class="label">归还入库</div>
+        </div>
+        <div class="op-type-item" :class="{active: form.log_type==='调拨'}" @click="selectOpType('调拨')">
+          <div class="icon">🔄</div>
+          <div class="label">调拨</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 步骤2: 选择资产 -->
+    <div v-if="step===2" class="card">
+      <div class="card-title">选择资产</div>
+      <div class="search-box">
+        <el-input
+          v-model="searchQuery"
+          placeholder="输入资产编号、SN或关联人搜索"
+          size="large"
+          clearable
+          @keyup.enter="searchAsset"
+        >
+          <template #append>
+            <el-button @click="searchAsset">搜索</el-button>
+          </template>
+        </el-input>
+      </div>
+
+      <!-- 按资产类型浏览 -->
+      <div v-if="!searched" style="margin-bottom: 20px;">
+        <div style="font-size: 14px; color: #8c8c8c; margin-bottom: 12px;">按类型浏览（点击展开查看在库资产）</div>
+        <div v-for="cat in categoryStats" :key="cat.code" style="margin-bottom: 8px;">
+          <div 
+            @click="toggleCategory(cat.code)"
+            style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 8px; cursor: pointer;"
+          >
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <el-tag size="small" :type="cat.count > 0 ? 'success' : 'info'">{{ cat.name }}</el-tag>
+              <span style="font-size: 13px; color: #595959;">在库 {{ cat.count }} 台</span>
+            </div>
+            <span v-if="expandedCategory === cat.code" style="color: #52c41a;">▼</span>
+            <span v-else style="color: #8c8c8c;">▶</span>
+          </div>
+          <!-- 展开的资产列表 -->
+          <div v-if="expandedCategory === cat.code" style="margin-top: 8px; padding-left: 16px;">
+            <div v-if="categoryAssets.length === 0" style="padding: 16px; text-align: center; color: #8c8c8c; font-size: 13px;">
+              该类型暂无在库资产
+            </div>
+            <div v-for="asset in categoryAssets" :key="asset.id" 
+              style="padding: 12px; background: #fafafa; border-radius: 8px; margin-bottom: 8px; cursor: pointer;"
+              @click="confirmAsset(asset)"
+            >
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="font-weight: 600; color: #1a1f35;">{{ asset.asset_no }}</div>
+                  <div style="font-size: 13px; color: #595959; margin-top: 4px;">
+                    {{ asset.brand }} {{ asset.model }}
+                  </div>
+                  <div style="font-size: 12px; color: #8c8c8c; margin-top: 2px;">
+                    {{ asset.location }} | {{ asset.spec || '无配置信息' }}
+                  </div>
+                </div>
+                <el-button type="primary" size="small" @click.stop="confirmAsset(asset)">选择</el-button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 搜索结果 -->
+      <div v-if="searchResults.length > 0" style="margin-top: 12px;">
+        <div style="font-size: 14px; color: #8c8c8c; margin-bottom: 12px;">找到 {{ searchResults.length }} 个结果，请选择：</div>
+        <div v-for="asset in searchResults" :key="asset.id" class="asset-result" style="margin-bottom: 12px; cursor: pointer;" @click="confirmAsset(asset)">
+          <div class="asset-no">{{ asset.asset_no }}</div>
+          <div class="asset-info">
+            <div>类目：{{ getAssetTypeName(asset.category) }}</div>
+            <div>品牌型号：{{ asset.brand }} {{ asset.model }}</div>
+            <div>当前状态：<el-tag size="small" :type="statusType(asset.status)">{{ asset.status }}</el-tag></div>
+            <div>存放地：{{ asset.location }}</div>
+            <div>关联人：{{ asset.assignee || '-' }}</div>
+          </div>
+          <el-button type="primary" style="margin-top: 12px; width: 100%;" @click.stop="confirmAsset(asset)">
+            选择此资产
+          </el-button>
+        </div>
+      </div>
+      <div v-else-if="searched && searchResults.length === 0" class="asset-result error">
+        <div style="text-align: center; color: #ff4d4f;">
+          <div style="font-size: 24px; margin-bottom: 8px;">😕</div>
+          <div>未找到匹配的资产</div>
+        </div>
+      </div>
+
+      <!-- 最近操作记录（仅在无搜索时显示） -->
+      <div v-if="!searched" style="margin-top: 20px;">
+        <div style="font-size: 14px; color: #8c8c8c; margin-bottom: 12px;">最近出入库记录</div>
+        <div v-for="log in recentLogs" :key="log.id" style="padding: 12px; background: #fafafa; border-radius: 8px; margin-bottom: 8px; font-size: 13px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <strong>{{ log.asset_no }}</strong>
+            <el-tag size="small" :type="logTypeType(log.log_type)">{{ log.log_type }}</el-tag>
+          </div>
+          <div style="color: #8c8c8c;">{{ log.log_time?.slice(0,16) }} · {{ log.operator }}</div>
+        </div>
+      </div>
+
+      <el-button style="margin-top: 16px;" @click="step=1">上一步</el-button>
+    </div>
+
+    <!-- 步骤3: 填写信息 -->
+    <div v-if="step===3" class="card">
+      <div class="card-title">填写{{ form.log_type }}信息</div>
+
+      <!-- 资产信息摘要 -->
+      <div class="asset-result" style="margin-bottom: 20px;">
+        <div class="asset-no">{{ selectedAsset?.asset_no }}</div>
+        <div class="asset-info">
+          <div>{{ selectedAsset?.category }} {{ selectedAsset?.brand }} {{ selectedAsset?.model }}</div>
+          <div>当前状态：{{ selectedAsset?.status }}</div>
+        </div>
+      </div>
+
+      <el-form :model="form" label-position="top">
+        <!-- 出库/调拨显示领用人 -->
+        <el-form-item label="领用人" v-if="['出库','调拨'].includes(form.log_type)" required>
+          <el-select
+            v-model="form.target_user"
+            filterable
+            remote
+            reserve-keyword
+            allow-create
+            placeholder="输入姓名搜索或直接输入"
+            :remote-method="searchUsers"
+            :loading="userSearchLoading"
+            style="width: 100%;">
+            <el-option v-for="user in userSearchResults" :key="user.id" :label="user.name" :value="user.name"/>
+          </el-select>
+        </el-form-item>
+
+        <!-- 归还显示归还人 -->
+        <el-form-item label="归还人" v-if="form.log_type==='归还'" required>
+          <el-select
+            v-model="form.target_user"
+            filterable
+            remote
+            reserve-keyword
+            allow-create
+            placeholder="输入姓名搜索或直接输入"
+            :remote-method="searchUsers"
+            :loading="userSearchLoading"
+            style="width: 100%;">
+            <el-option v-for="user in userSearchResults" :key="user.id" :label="user.name" :value="user.name"/>
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="目标地点" required>
+          <el-select v-model="form.to_location" filterable allow-create placeholder="选择或输入存放地点" style="width: 100%;">
+            <el-option v-for="loc in meta.locations" :key="loc" :label="loc" :value="loc"/>
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="经办人" required>
+          <el-input v-model="form.operator" placeholder="输入您的姓名"/>
+        </el-form-item>
+
+        <el-form-item label="备注">
+          <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="可选：填写备注信息"/>
+        </el-form-item>
+
+        <!-- 关联耗材 -->
+        <el-form-item v-if="form.log_type==='出库' || form.log_type==='归还'">
+          <el-checkbox v-model="form.has_consumables">
+            同时{{ form.log_type==='出库'?'领用':'归还' }}耗材
+          </el-checkbox>
+        </el-form-item>
+
+        <!-- 出库时：选择耗材 -->
+        <div v-if="form.log_type==='出库' && form.has_consumables" style="background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+          <div style="font-weight: 600; margin-bottom: 12px; color: #1a1f35;">选择要领用的耗材</div>
+          <div v-for="(item, idx) in selectedConsumables" :key="idx" style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+            <el-select v-model="item.consumable_id" filterable placeholder="选择耗材" style="flex: 2;" @change="onConsumableSelect(item)">
+              <el-option v-for="c in availableConsumables" :key="c.id" :label="`${c.name} (库存:${c.quantity}${c.unit})`" :value="c.id"/>
+            </el-select>
+            <el-input-number v-model="item.quantity" :min="1" :max="item.maxQty" style="flex: 1;" />
+            <el-button type="danger" circle size="small" @click="removeConsumable(idx)">×</el-button>
+          </div>
+          <el-button type="primary" size="small" @click="addConsumable">+ 添加耗材</el-button>
+        </div>
+
+        <!-- 归还时：显示用户名下耗材 -->
+        <div v-if="form.log_type==='归还' && form.has_consumables" style="background: #e6f4ff; border: 1px solid #91caff; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+          <div style="font-weight: 600; margin-bottom: 12px; color: #1a1f35;">选择要归还的耗材</div>
+          <div v-if="!form.target_user" style="color: #8c8c8c; text-align: center; padding: 20px;">
+            请先填写归还人
+          </div>
+          <div v-else-if="userConsumables.length === 0" style="color: #8c8c8c; text-align: center; padding: 20px;">
+            该用户名下没有领用的耗材
+          </div>
+          <div v-else>
+            <div v-for="item in userConsumables" :key="item.id" style="display: flex; align-items: center; padding: 8px; background: #fff; border-radius: 4px; margin-bottom: 8px;">
+              <el-checkbox v-model="item.selected" style="margin-right: 12px;"/>
+              <div style="flex: 1;">
+                <div style="font-weight: 500;">{{ item.name }} ({{ item.item_no }})</div>
+                <div style="font-size: 12px; color: #8c8c8c;">已领用: {{ item.total_out }} {{ item.unit }}</div>
+              </div>
+              <el-input-number v-if="item.selected" v-model="item.returnQty" :min="1" :max="item.total_out" size="small" style="width: 100px;"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- 照片上传 -->
+        <el-form-item label="资产照片（必填）" required>
+          <div class="photo-upload" :class="{'has-files': photos.length>0}" @click="selectPhotos">
+            <div class="upload-icon">📷</div>
+            <div class="upload-text">点击上传资产照片</div>
+            <div class="upload-hint">支持 JPG、PNG 格式，最多 5 张</div>
+          </div>
+          <input type="file" ref="fileInput" multiple accept="image/*" style="display: none;" @change="handleFileChange">
+
+          <div class="photo-preview-list" v-if="photos.length>0">
+            <div class="photo-preview-item" v-for="(photo, idx) in photos" :key="idx">
+              <img :src="photo.preview" alt="preview">
+              <button class="remove-btn" @click.stop="removePhoto(idx)">×</button>
+            </div>
+          </div>
+        </el-form-item>
+      </el-form>
+
+      <div style="display: flex; gap: 12px;">
+        <el-button style="flex: 1;" @click="step=2">上一步</el-button>
+        <el-button type="primary" style="flex: 2;" class="submit-btn" :loading="submitting" @click="submit">
+          确认{{ form.log_type }}
+        </el-button>
+      </div>
+    </div>
+
+    <!-- 成功页面 -->
+    <div v-if="step===4" class="card">
+      <div class="success-box">
+        <div class="success-icon">✓</div>
+        <h2>{{ form.log_type }}成功</h2>
+        <p>操作已记录，飞书通知已发送</p>
+        <el-button type="primary" style="margin-top: 24px; width: 200px;" @click="reset">
+          继续操作
+        </el-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部导航 -->
+  <nav class="bottom-nav">
+    <a href="stock.html" class="bottom-nav-item active">
+      <span class="icon">📦</span>
+      <span>资产</span>
+    </a>
+    <a href="consumable_stock.html" class="bottom-nav-item">
+      <span class="icon">🧪</span>
+      <span>耗材</span>
+    </a>
+    <a href="repair.html" class="bottom-nav-item">
+      <span class="icon">🔧</span>
+      <span>报修</span>
+    </a>
+    <a href="index.html" class="bottom-nav-item" onclick="window.location.href='/main.html';return false;">
+      <span class="icon">🏠</span>
+      <span>首页</span>
+    </a>
+  </nav>
+</div>
+
+<script>
+const { createApp, ref, reactive, onMounted } = Vue;
+const API = '/api';
+
+createApp({
+  setup() {
+    const step = ref(1);
+    function currentUserName() {
+      try { return (JSON.parse(localStorage.getItem('ams_user') || '{}').name) || ''; } catch (e) { return ''; }
+    }
+    const form = reactive({
+      log_type: '出库',
+      asset_id: '',
+      target_user: '',
+      to_location: '',
+      operator: currentUserName(),
+      remark: ''
+    });
+    const searchQuery = ref('');
+    const searchResults = ref([]);
+    const searched = ref(false);
+    const categoryStats = ref([]);
+    const expandedCategory = ref('');
+    const categoryAssets = ref([]);
+    const selectedAsset = ref(null);
+    const employees = ref([]);
+    const meta = reactive({ locations: [], asset_types: [] });
+    const recentLogs = ref([]);
+    const photos = ref([]);
+    const fileInput = ref(null);
+    const submitting = ref(false);
+    const userSearchResults = ref([]);
+    const userSearchLoading = ref(false);
+    let userSearchTimer = null;
+    const availableConsumables = ref([]);
+    const selectedConsumables = ref([]);
+    const userConsumables = ref([]);
+
+    function selectOpType(type) {
+      form.log_type = type;
+      step.value = 2;
+    }
+
+    async function searchAsset() {
+      // scope=all 跳过权限隔离，出入库场景需看到全量资产
+      const kw = searchQuery.value.trim();
+      searched.value = !!kw;
+      const url = kw
+        ? `${API}/assets?q=${encodeURIComponent(kw)}&page_size=20&scope=all`
+        : `${API}/assets?page_size=20&scope=all`;
+      const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('ams_token') || '') } }).then(r => r.json());
+      searchResults.value = res.data || [];
+    }
+
+    function confirmAsset(asset) {
+      selectedAsset.value = asset;
+      form.asset_id = asset.id;
+      form.to_location = asset.location;
+      step.value = 3;
+    }
+
+    function selectPhotos() {
+      fileInput.value?.click();
+    }
+
+    function handleFileChange(e) {
+      const files = Array.from(e.target.files);
+      if (photos.value.length + files.length > 5) {
+        ElementPlus.ElMessage.warning('最多只能上传5张照片');
+        return;
+      }
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          photos.value.push({ file, preview: e.target.result });
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function removePhoto(idx) {
+      photos.value.splice(idx, 1);
+    }
+
+    // 搜索用户
+    async function searchUsers(query) {
+      if (!query || query.length < 1) {
+        userSearchResults.value = [];
+        return;
+      }
+      userSearchLoading.value = true;
+      clearTimeout(userSearchTimer);
+      userSearchTimer = setTimeout(async () => {
+        try {
+          const res = await fetch(`${API}/employees/search?q=${encodeURIComponent(query)}`, { headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('ams_token') || '') } });
+          const data = await res.json();
+          userSearchResults.value = data.data || [];
+          // 如果选择了用户，加载其耗材
+          if (form.log_type === '归还' && form.target_user) {
+            loadUserConsumables(form.target_user);
+          }
+        } catch (e) {
+          userSearchResults.value = [];
+        } finally {
+          userSearchLoading.value = false;
+        }
+      }, 300);
+    }
+
+    // 加载可用耗材列表
+    async function loadAvailableConsumables() {
+      const res = await fetch(`${API}/consumables?status=正常&page_size=100`).then(r => r.json());
+      availableConsumables.value = res.data || [];
+    }
+
+    // 加载用户领用的耗材
+    async function loadUserConsumables(username) {
+      if (!username) {
+        userConsumables.value = [];
+        return;
+      }
+      const res = await fetch(`${API}/consumables/by-user?user=${encodeURIComponent(username)}`).then(r => r.json());
+      userConsumables.value = (res.data || []).map(item => ({
+        ...item,
+        selected: false,
+        returnQty: 1
+      }));
+    }
+
+    // 添加耗材选择
+    function addConsumable() {
+      selectedConsumables.value.push({
+        consumable_id: null,
+        quantity: 1,
+        maxQty: 999
+      });
+    }
+
+    // 移除耗材选择
+    function removeConsumable(idx) {
+      selectedConsumables.value.splice(idx, 1);
+    }
+
+    // 选择耗材时更新最大数量
+    function onConsumableSelect(item) {
+      const c = availableConsumables.value.find(x => x.id === item.consumable_id);
+      if (c) {
+        item.maxQty = c.quantity;
+        if (item.quantity > c.quantity) item.quantity = c.quantity;
+      }
+    }
+
+    async function submit() {
+      if (!form.target_user && ['出库','调拨'].includes(form.log_type)) {
+        ElementPlus.ElMessage.warning('请填写领用人');
+        return;
+      }
+      if (!form.to_location) {
+        ElementPlus.ElMessage.warning('请填写目标地点');
+        return;
+      }
+      if (!form.operator) {
+        ElementPlus.ElMessage.warning('请填写经办人');
+        return;
+      }
+      if (photos.value.length === 0) {
+        ElementPlus.ElMessage.warning('请至少上传一张资产照片');
+        return;
+      }
+
+      submitting.value = true;
+      const formData = new FormData();
+      Object.keys(form).forEach(key => {
+        if (form[key]) formData.append(key, form[key]);
+      });
+      photos.value.forEach(p => {
+        formData.append('photos', p.file);
+      });
+
+      try {
+        const res = await fetch(`${API}/quick/stock`, {
+          method: 'POST',
+          // FormData 不能手动设 Content-Type（会破坏 multipart boundary），只补 Authorization
+          headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('ams_token') || '') },
+          body: formData
+        });
+        let data = {};
+        try {
+          data = await res.json();
+        } catch (e) {
+          // 响应不是 JSON（通常为服务器 500/502 等错误页）
+          ElementPlus.ElMessage.error(`服务器异常(${res.status})，请稍后重试或联系管理员`);
+          return;
+        }
+        if (res.ok) {
+          // 处理关联耗材
+          if (form.has_consumables) {
+            await submitConsumables();
+          }
+          step.value = 4;
+        } else {
+          ElementPlus.ElMessage.error(data.error || `操作失败(${res.status})`);
+        }
+      } catch (e) {
+        ElementPlus.ElMessage.error('网络错误，请检查网络连接后重试');
+      }
+      submitting.value = false;
+    }
+
+    // 提交关联耗材
+    async function submitConsumables() {
+      if (form.log_type === '出库') {
+        // 出库耗材
+        for (const item of selectedConsumables.value) {
+          if (!item.consumable_id) continue;
+          await fetch(`${API}/consumables/stock/out`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              item_id: item.consumable_id,
+              quantity: item.quantity,
+              operator: form.operator,
+              target_user: form.target_user,
+              remark: `资产${form.log_type}时关联领用`
+            })
+          });
+        }
+      } else if (form.log_type === '归还') {
+        // 归还耗材
+        for (const item of userConsumables.value) {
+          if (!item.selected) continue;
+          await fetch(`${API}/consumables/stock/in`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              item_id: item.id,
+              quantity: item.returnQty,
+              operator: form.operator,
+              target_user: form.target_user,
+              remark: `资产归还时关联归还`
+            })
+          });
+        }
+      }
+    }
+
+    function reset() {
+      step.value = 1;
+      form.log_type = '出库';
+      form.asset_id = '';
+      form.target_user = '';
+      form.to_location = '';
+      form.operator = currentUserName();
+      form.remark = '';
+      form.has_consumables = false;
+      searchQuery.value = '';
+      searchResults.value = [];
+      searched.value = false;
+      selectedAsset.value = null;
+      photos.value = [];
+      selectedConsumables.value = [];
+      userConsumables.value = [];
+      loadRecentLogs();
+    }
+
+    function statusType(status) {
+      return { '在库': 'success', '在用': 'primary', '维修中': 'warning', '已报废': 'danger' }[status] || 'info';
+    }
+
+    function logTypeType(type) {
+      return { '入库': 'success', '出库': 'primary', '归还': 'warning', '调拨': 'info' }[type] || 'info';
+    }
+
+    async function loadEmployees() {
+      employees.value = await fetch(`${API}/employees`).then(r => r.json());
+    }
+
+    async function loadMeta() {
+      const r = await fetch(`${API}/meta`).then(r => r.json());
+      Object.assign(meta, r);
+    }
+
+    // 获取资产类型名称
+    function getAssetTypeName(code) {
+      const type = meta.asset_types.find(t => t.code === code);
+      return type ? type.name : code;
+    }
+
+    async function loadRecentLogs() {
+      const r = await fetch(`${API}/stock/logs?page_size=5`).then(r => r.json());
+      recentLogs.value = r.data || [];
+    }
+
+    // 加载资产类型统计
+    async function loadCategoryStats() {
+      const r = await fetch(`${API}/assets/category-stats?status=在库`, { headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('ams_token') || '') } }).then(r => r.json());
+      categoryStats.value = r.data || [];
+    }
+
+    // 展开/收起资产类型
+    async function toggleCategory(catCode) {
+      if (expandedCategory.value === catCode) {
+        expandedCategory.value = '';
+        categoryAssets.value = [];
+      } else {
+        expandedCategory.value = catCode;
+        // 加载该类型的在库资产（scope=all 跳过权限隔离，出入库操作需看到全量在库资产）
+        const r = await fetch(`${API}/assets?category=${catCode}&status=在库&page_size=50&scope=all`, { headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('ams_token') || '') } }).then(r => r.json());
+        categoryAssets.value = r.data || [];
+      }
+    }
+
+    onMounted(() => {
+      loadEmployees();
+      loadMeta();
+      loadRecentLogs();
+      loadAvailableConsumables();
+      loadCategoryStats();
+    });
+
+    return {
+      step, form, searchQuery, searchResults, searched, selectedAsset,
+      employees, meta, recentLogs, photos, fileInput, submitting,
+      userSearchResults, userSearchLoading, availableConsumables,
+      selectedConsumables, userConsumables,
+      categoryStats, expandedCategory, categoryAssets,
+      selectOpType, searchAsset, confirmAsset, selectPhotos,
+      handleFileChange, removePhoto, submit, reset,
+      statusType, logTypeType, searchUsers, getAssetTypeName,
+      loadAvailableConsumables, loadUserConsumables,
+      addConsumable, removeConsumable, onConsumableSelect, submitConsumables,
+      loadCategoryStats, toggleCategory
+    };
+  }
+}).use(ElementPlus, { locale: ElementPlusLocaleZhCn }).mount('#app');
+</script>
+</body>
+</html>

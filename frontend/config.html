@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<script src="./ams-role.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>系统设置 - 企业资产管理系统</title>
+<link rel="stylesheet" href="./lib/element-plus.index.css">
+<script src="./lib/vue.global.prod.js"></script>
+<script src="./lib/element-plus.index.full.min.js"></script>
+<script src="./lib/element-plus-zh-cn.min.js"></script>
+<script src="./ams-ep-zh.js"></script>
+<script src="./lib/element-plus-icons.iife.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f0f2f5; }
+
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 220px; height: 100vh; max-height: 100vh; overflow-y: auto;
+  background: #243038;
+  display: flex; flex-direction: column;
+  position: fixed; left: 0; top: 0; z-index: 100;
+  box-shadow: 2px 0 12px rgba(0,0,0,.15);
+}
+.sidebar-logo { padding: 20px 16px 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.sidebar-logo-icon { width: 36px; height: 36px; background: #1a6b5c; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.sidebar-logo-text { font-size: 13px; font-weight: 600; color: #fff; line-height: 1.3; }
+.sidebar-logo-sub { font-size: 11px; color: rgba(255,255,255,.45); }
+.nav-group-title { padding: 16px 16px 6px; font-size: 11px; color: rgba(255,255,255,.3); text-transform: uppercase; letter-spacing: .5px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; color: rgba(255,255,255,.65); font-size: 13px; cursor: pointer; border-radius: 6px; margin: 1px 8px; text-decoration: none; transition: all .2s; }
+.nav-item:hover, .nav-item.active { background: rgba(26,107,92,.28); color: #fff; }
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+.main { margin-left: 220px; min-height: 100vh; display: flex; flex-direction: column; }
+.topbar { height: 56px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; padding: 0 24px; gap: 12px; position: sticky; top: 0; z-index: 50; }
+.topbar-title { font-size: 16px; font-weight: 600; color: #1a1f35; flex: 1; }
+.content { padding: 24px; flex: 1; }
+
+.card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 20px; }
+
+.config-table { width: 100%; border-collapse: collapse; }
+.config-table thead tr { background: #f5f7fa; border-bottom: 2px solid #e8e8e8; }
+.config-table thead th { padding: 12px 14px; font-size: 13px; font-weight: 600; color: #606266; text-align: left; white-space: nowrap; }
+.config-table tbody tr { border-bottom: 1px solid #f0f0f0; transition: background .15s; }
+.config-table tbody tr:hover { background: #f5f7ff; }
+.config-table td { padding: 10px 14px; font-size: 13px; color: #303133; }
+
+.code-badge { 
+  display: inline-block; padding: 2px 10px; border-radius: 4px; 
+  font-size: 12px; font-family: 'Consolas', monospace; font-weight: 600;
+  background: #e6f4ff; color: #1677ff; border: 1px solid #91caff;
+}
+.status-on { color: #52c41a; }
+.status-off { color: #8c8c8c; }
+.card { overflow-x: auto; max-width: 100%; }
+@media (max-width: 768px) {
+  html, body { overflow-x: hidden; max-width: 100vw; }
+  .sidebar { display: none !important; }
+  .main { margin-left: 0 !important; width: 100% !important; }
+  .content { padding: 12px; }
+  .topbar { padding: 0 12px; }
+  .el-dialog { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; margin: 12px auto !important; }
+}
+</style>
+<!-- 同步守卫：非管理角色不得进入本页面（系统配置 / 操作日志） -->
+<script>
+(function () {
+  try {
+    var raw = localStorage.getItem('ams_user');
+    if (!raw) return;                     // 无缓存交给页面自身的 token 校验
+    var u = JSON.parse(raw);
+    if (!u || !u.role) return;            // 角色未知不猜
+    if (window.amsIsAdmin(u.role)) return; // 管理角色放行
+    if (location.pathname === '/my.html') return;
+    window.location.replace('/my.html');
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+<div id="app">
+  <div class="layout">
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">📦</div>
+        <div>
+          <div class="sidebar-logo-text">企业资产管理</div>
+          <div class="sidebar-logo-sub">Asset Management</div>
+        </div>
+      </div>
+      <div class="nav-group-title">功能菜单</div>
+      <a href="./index.html" class="nav-item"><span class="nav-icon">📋</span>资产台账</a>
+      <a href="./orders.html" class="nav-item"><span class="nav-icon">🛒</span>采购订单</a>
+      <a href="./stock.html" class="nav-item"><span class="nav-icon">📦</span>出入库</a>
+      <a href="./repair.html" class="nav-item"><span class="nav-icon">🔧</span>维修管理</a>
+      <a href="./dispose.html" class="nav-item"><span class="nav-icon">🗑️</span>报废管理</a>
+      <a href="./inventory.html" class="nav-item"><span class="nav-icon">📊</span>库存盘点</a>
+      <a href="./approval.html" class="nav-item"><span class="nav-icon">✅</span>审批中心</a>
+      <div class="nav-group-title">配置</div>
+      <a href="./fields.html" class="nav-item"><span class="nav-icon">🏷️</span>字段维护</a>
+      <a href="./config.html" class="nav-item active"><span class="nav-icon">⚙️</span>系统设置</a>
+    </div>
+
+    <!-- 主体 -->
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-title">⚙️ 系统设置</div>
+        <el-button size="small" @click="loadAll"><el-icon><Refresh /></el-icon> 刷新</el-button>
+      </div>
+      <div class="content">
+        
+        <!-- 说明卡片 -->
+        <div class="card" style="background: #eef5f3; border: 1px solid #1a6b5c33;">
+          <div style="font-weight: 600; color: #333; margin-bottom: 8px;">📝 资产编号规则说明</div>
+          <div style="color: #666; font-size: 13px; line-height: 1.8;">
+            <div>资产编号格式：<code style="background: #f0f0f0; padding: 2px 8px; border-radius: 4px; font-family: Consolas, monospace;">YYYYMMDD001-主体-地区-类型</code></div>
+            <div style="margin-top: 6px;">示例：<code style="background: #f0f0f0; padding: 2px 8px; border-radius: 4px; font-family: Consolas, monospace;">20260410001-NHWHK-SZ-LT</code>（2026年4月10日第1台入库，主体香港华科，地区深圳，类型笔记本）</div>
+          </div>
+        </div>
+
+        <!-- Tab切换 -->
+        <el-tabs v-model="activeTab" class="card">
+          <!-- 主体管理 -->
+          <el-tab-pane label="🏢 主体/BU" name="subjects">
+            <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: #666; font-size: 13px;">管理公司/组织架构主体，如 NHWHK（香港华科）、XJBH（北京）</span>
+              <el-button type="primary" size="small" @click="openForm('subject')"><el-icon><Plus /></el-icon> 新增主体</el-button>
+            </div>
+            <table class="config-table">
+              <thead><tr><th style="width:100px">代码</th><th>名称</th><th style="width:100px">所属地区</th><th style="width:80px">状态</th><th style="width:100px">操作</th></tr></thead>
+              <tbody>
+                <tr v-for="row in subjects" :key="row.id">
+                  <td><span class="code-badge">{{ row.code }}</span></td>
+                  <td>{{ row.name }}</td>
+                  <td>{{ row.region || '-' }}</td>
+                  <td><span :class="row.active ? 'status-on' : 'status-off'">{{ row.active ? '✓ 启用' : '✕ 停用' }}</span></td>
+                  <td>
+                    <el-button type="primary" link size="small" @click="editRow('subject', row)">编辑</el-button>
+                    <el-button type="danger" link size="small" @click="deleteRow('subject', row)">删除</el-button>
+                  </td>
+                </tr>
+                <tr v-if="!subjects.length"><td colspan="5" style="text-align:center;color:#8c8c8c">暂无数据</td></tr>
+              </tbody>
+            </table>
+          </el-tab-pane>
+
+          <!-- 资产类型管理 -->
+          <el-tab-pane label="📱 资产类型" name="types">
+            <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: #666; font-size: 13px;">管理资产类型代码，如 LT（笔记本）、DP（显示器）、APP（软件）</span>
+              <el-button type="primary" size="small" @click="openForm('type')"><el-icon><Plus /></el-icon> 新增类型</el-button>
+            </div>
+            <table class="config-table">
+              <thead><tr><th style="width:100px">代码</th><th>名称</th><th style="width:80px">状态</th><th style="width:100px">操作</th></tr></thead>
+              <tbody>
+                <tr v-for="row in types" :key="row.id">
+                  <td><span class="code-badge">{{ row.code }}</span></td>
+                  <td>{{ row.name }}</td>
+                  <td><span :class="row.active ? 'status-on' : 'status-off'">{{ row.active ? '✓ 启用' : '✕ 停用' }}</span></td>
+                  <td>
+                    <el-button type="primary" link size="small" @click="editRow('type', row)">编辑</el-button>
+                    <el-button type="danger" link size="small" @click="deleteRow('type', row)">删除</el-button>
+                  </td>
+                </tr>
+                <tr v-if="!types.length"><td colspan="4" style="text-align:center;color:#8c8c8c">暂无数据</td></tr>
+              </tbody>
+            </table>
+          </el-tab-pane>
+
+          <!-- 存放地管理 -->
+          <el-tab-pane label="📍 存放地/地区" name="regions">
+            <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: #666; font-size: 13px;">管理资产初始存放地/入库地区，如 SZ（深圳）、BJ（北京）、HK（香港）</span>
+              <el-button type="primary" size="small" @click="openForm('region')"><el-icon><Plus /></el-icon> 新增地区</el-button>
+            </div>
+            <table class="config-table">
+              <thead><tr><th style="width:100px">代码</th><th>名称</th><th style="width:80px">状态</th><th style="width:100px">操作</th></tr></thead>
+              <tbody>
+                <tr v-for="row in regions" :key="row.id">
+                  <td><span class="code-badge">{{ row.code }}</span></td>
+                  <td>{{ row.name }}</td>
+                  <td><span :class="row.active ? 'status-on' : 'status-off'">{{ row.active ? '✓ 启用' : '✕ 停用' }}</span></td>
+                  <td>
+                    <el-button type="primary" link size="small" @click="editRow('region', row)">编辑</el-button>
+                    <el-button type="danger" link size="small" @click="deleteRow('region', row)">删除</el-button>
+                  </td>
+                </tr>
+                <tr v-if="!regions.length"><td colspan="4" style="text-align:center;color:#8c8c8c">暂无数据</td></tr>
+              </tbody>
+            </table>
+          </el-tab-pane>
+
+          <!-- 资产类型参数 -->
+          <el-tab-pane label="⚙️ 资产类型参数" name="typeParams">
+            <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: #666; font-size: 13px;">配置各资产类型的折旧月数、残值率和可发放年限</span>
+              <el-button type="primary" size="small" @click="syncTypeParams"><el-icon><Refresh /></el-icon> 同步类型</el-button>
+            </div>
+            <table class="config-table">
+              <thead>
+                <tr>
+                  <th style="width:100px">类型代码</th>
+                  <th>类型名称</th>
+                  <th style="width:120px">折旧月数</th>
+                  <th style="width:100px">残值率</th>
+                  <th style="width:140px">可发放年限</th>
+                  <th style="width:80px">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in typeParams" :key="row.id">
+                  <td><span class="code-badge">{{ row.type_code }}</span></td>
+                  <td>{{ row.type_name }}</td>
+                  <td>{{ row.depreciation_months }} 个月</td>
+                  <td>{{ (row.residual_rate * 100).toFixed(0) }}%</td>
+                  <td>
+                    <span v-if="row.max_issue_years > 0">{{ row.max_issue_years }} 年</span>
+                    <span v-else style="color: #8c8c8c;">不限</span>
+                  </td>
+                  <td>
+                    <el-button type="primary" link size="small" @click="editTypeParam(row)">编辑</el-button>
+                  </td>
+                </tr>
+                <tr v-if="!typeParams.length"><td colspan="6" style="text-align:center;color:#8c8c8c">暂无数据，请点击「同步类型」按钮初始化</td></tr>
+              </tbody>
+            </table>
+            
+            <!-- 说明卡片 -->
+            <div class="card" style="margin-top: 20px; background: #f6ffed; border: 1px solid #b7eb8f;">
+              <div style="font-weight: 600; color: #389e0d; margin-bottom: 8px;">💡 参数说明</div>
+              <div style="color: #666; font-size: 13px; line-height: 1.8;">
+                <div><strong>折旧月数：</strong>资产折旧计算的周期，如笔记本默认36个月（3年）</div>
+                <div><strong>残值率：</strong>折旧完成后剩余的价值比例，如5%表示折完后还值原价的5%</div>
+                <div><strong>可发放年限：</strong>资产使用不超过多少年可以派发给用户，超过年限派发时会弹出警告</div>
+              </div>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑弹窗 -->
+  <el-dialog v-model="formVisible" :title="formTitle" width="480px" destroy-on-close>
+    <el-form :model="formData" label-width="90px" size="default">
+      <el-form-item label="代码" required>
+        <el-input v-model="formData.code" placeholder="如 NHWHK" maxlength="20" />
+      </el-form-item>
+      <el-form-item label="名称" required>
+        <el-input v-model="formData.name" placeholder="如 香港华科" />
+      </el-form-item>
+      <el-form-item v-if="formType === 'subject'" label="所属地区">
+        <el-input v-model="formData.region" placeholder="如 香港" />
+      </el-form-item>
+      <el-form-item label="排序">
+        <el-input-number v-model="formData.sort_order" :min="0" :max="999" />
+      </el-form-item>
+      <el-form-item label="启用状态">
+        <el-switch v-model="formData.active" :active-value="1" :inactive-value="0" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="formVisible = false">取消</el-button>
+      <el-button type="primary" :loading="saving" @click="saveForm">保存</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- 资产类型参数编辑弹窗 -->
+  <el-dialog v-model="paramFormVisible" title="编辑资产类型参数" width="480px" destroy-on-close>
+    <el-form :model="paramFormData" label-width="100px" size="default">
+      <el-form-item label="类型代码">
+        <el-input v-model="paramFormData.type_code" disabled />
+      </el-form-item>
+      <el-form-item label="类型名称">
+        <el-input v-model="paramFormData.type_name" disabled />
+      </el-form-item>
+      <el-form-item label="折旧月数" required>
+        <el-input-number v-model="paramFormData.depreciation_months" :min="1" :max="600" style="width: 150px;" />
+        <span style="margin-left: 8px; color: #666;">个月</span>
+      </el-form-item>
+      <el-form-item label="残值率" required>
+        <el-input-number v-model="paramFormData.residual_rate" :min="0" :max="1" :precision="2" :step="0.05" style="width: 150px;" />
+        <span style="margin-left: 8px; color: #666;">（0.05 = 5%）</span>
+      </el-form-item>
+      <el-form-item label="可发放年限" required>
+        <el-input-number v-model="paramFormData.max_issue_years" :min="0" :max="50" style="width: 150px;" />
+        <span style="margin-left: 8px; color: #666;">年（0表示不限）</span>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="paramFormVisible = false">取消</el-button>
+      <el-button type="primary" :loading="paramSaving" @click="saveTypeParam">保存</el-button>
+    </template>
+  </el-dialog>
+</div>
+
+<script>
+const { createApp, ref, reactive } = Vue;
+const API = '';
+
+const app = createApp({
+  setup() {
+    const { ElMessage, ElMessageBox } = ElementPlus;
+
+    const activeTab = ref('subjects');
+    const subjects = ref([]);
+    const types = ref([]);
+    const regions = ref([]);
+    const typeParams = ref([]);
+    const saving = ref(false);
+    const paramSaving = ref(false);
+
+    // 表单相关
+    const formVisible = ref(false);
+    const formType = ref('subject'); // subject / type / region
+    const formTitle = ref('');
+    const editingId = ref(null);
+    const formData = reactive({ code: '', name: '', region: '', sort_order: 0, active: 1 });
+
+    // 资产类型参数表单
+    const paramFormVisible = ref(false);
+    const paramFormData = reactive({ type_code: '', type_name: '', depreciation_months: 36, residual_rate: 0.05, max_issue_years: 2 });
+
+    async function loadAll() {
+      const r = await fetch(`${API}/api/asset-config/all`);
+      const d = await r.json();
+      if (d.success) {
+        subjects.value = d.data.subjects || [];
+        types.value = d.data.types || [];
+        regions.value = d.data.regions || [];
+      }
+      // 加载资产类型参数
+      await loadTypeParams();
+    }
+
+    async function loadTypeParams() {
+      const r = await fetch(`${API}/api/asset-type-params`);
+      const d = await r.json();
+      if (d.success) {
+        typeParams.value = d.data || [];
+      }
+    }
+
+    async function syncTypeParams() {
+      try {
+        saving.value = true;
+        const r = await fetch(`${API}/api/asset-type-params/sync`, { method: 'POST' });
+        const d = await r.json();
+        if (d.success) {
+          ElMessage.success(`同步完成，新增 ${d.created} 条记录`);
+          await loadTypeParams();
+        } else {
+          ElMessage.error(d.error || '同步失败');
+        }
+      } finally {
+        saving.value = false;
+      }
+    }
+
+    function openForm(type) {
+      formType.value = type;
+      editingId.value = null;
+      Object.assign(formData, { code: '', name: '', region: '', sort_order: 0, active: 1 });
+      if (type === 'subject') formTitle.value = '新增主体';
+      else if (type === 'type') formTitle.value = '新增资产类型';
+      else formTitle.value = '新增存放地';
+      formVisible.value = true;
+    }
+
+    function editRow(type, row) {
+      formType.value = type;
+      editingId.value = row.id;
+      Object.assign(formData, {
+        code: row.code, name: row.name,
+        region: row.region || '', sort_order: row.sort_order || 0, active: row.active
+      });
+      if (type === 'subject') formTitle.value = '编辑主体';
+      else if (type === 'type') formTitle.value = '编辑资产类型';
+      else formTitle.value = '编辑存放地';
+      formVisible.value = true;
+    }
+
+    async function saveForm() {
+      if (!formData.code || !formData.name) {
+        ElMessage.warning('代码和名称不能为空');
+        return;
+      }
+      saving.value = true;
+      try {
+        const url = editingId.value
+          ? `${API}/api/asset-config/${formType.value}s/${editingId.value}`
+          : `${API}/api/asset-config/${formType.value}s`;
+        const method = editingId.value ? 'PUT' : 'POST';
+        const r = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+        const d = await r.json();
+        if (d.success) {
+          ElMessage.success('保存成功');
+          formVisible.value = false;
+          loadAll();
+        } else {
+          ElMessage.error(d.error || '保存失败');
+        }
+      } finally {
+        saving.value = false;
+      }
+    }
+
+    async function deleteRow(type, row) {
+      try {
+        await ElMessageBox.confirm(`确认删除 "${row.name}" 吗？`, '提示', { type: 'warning' });
+        await fetch(`${API}/api/asset-config/${type}s/${row.id}`, { method: 'DELETE' });
+        ElMessage.success('已删除');
+        loadAll();
+      } catch {}
+    }
+
+    function editTypeParam(row) {
+      Object.assign(paramFormData, {
+        type_code: row.type_code,
+        type_name: row.type_name,
+        depreciation_months: row.depreciation_months,
+        residual_rate: row.residual_rate,
+        max_issue_years: row.max_issue_years
+      });
+      paramFormVisible.value = true;
+    }
+
+    async function saveTypeParam() {
+      if (!paramFormData.type_code) {
+        ElMessage.warning('类型代码不能为空');
+        return;
+      }
+      paramSaving.value = true;
+      try {
+        const r = await fetch(`${API}/api/asset-type-params/${paramFormData.type_code}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            depreciation_months: paramFormData.depreciation_months,
+            residual_rate: paramFormData.residual_rate,
+            max_issue_years: paramFormData.max_issue_years
+          })
+        });
+        const d = await r.json();
+        if (d.success) {
+          ElMessage.success('保存成功');
+          paramFormVisible.value = false;
+          await loadTypeParams();
+        } else {
+          ElMessage.error(d.error || '保存失败');
+        }
+      } finally {
+        paramSaving.value = false;
+      }
+    }
+
+    // 认证检查
+    function checkAuth() {
+      const token = localStorage.getItem('ams_token');
+      if (!token) { window.location.href = '/login.html'; }
+    }
+
+    loadAll();
+    checkAuth();
+
+    return {
+      activeTab, subjects, types, regions, typeParams,
+      formVisible, formType, formTitle, formData, saving,
+      paramFormVisible, paramFormData, paramSaving,
+      openForm, editRow, saveForm, deleteRow,
+      loadAll, loadTypeParams, syncTypeParams, editTypeParam, saveTypeParam,
+      Refresh: ElementPlusIconsVue.Refresh,
+      Plus: ElementPlusIconsVue.Plus,
+    };
+  }
+});
+
+app.use(ElementPlus, { locale: ElementPlusLocaleZhCn }).use(ElementPlusIconsVue).mount('#app');
+</script>
+</body>
+</html>

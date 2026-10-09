@@ -1,0 +1,13 @@
+[Unit]
+Description=AMS Auto-Heal Check (恢复容器和定时备份任务)
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /opt/asset-management-system/check-and-heal.sh
+RemainAfterExit=yes
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target

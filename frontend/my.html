@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<script src="./ams-role.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>个人中心 - 企业资产管理系统</title>
+<link rel="stylesheet" href="./lib/element-plus.index.css">
+<script src="./lib/vue.global.prod.js"></script>
+<script src="./lib/element-plus.index.full.min.js"></script>
+<script src="./lib/element-plus-zh-cn.min.js"></script>
+<script src="./ams-ep-zh.js"></script>
+<script src="./lib/element-plus-icons.iife.min.js"></script>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: #f0f2f5;
+  min-height: 100vh;
+}
+
+/* ── 左侧窄导航 ── */
+.sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0; width: 180px;
+  height: 100vh; max-height: 100vh; overflow: hidden;
+  background: #243038;
+  color: #fff; z-index: 100; display: flex; flex-direction: column;
+  box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+}
+.sidebar-brand {
+  padding: 20px 16px; font-size: 14px; font-weight: 700;
+  border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 8px;
+}
+.sidebar-brand .brand-icon { font-size: 22px; }
+.sidebar-brand span { color: #1a6b5c; }
+.sidebar-nav { flex: 1; min-height: 0; padding: 12px 0; overflow-y: auto; }
+.sidebar-item {
+  padding: 12px 20px; font-size: 13px; color: rgba(255,255,255,0.65); cursor: pointer;
+  display: flex; align-items: center; gap: 10px; transition: all 0.2s;
+  border-left: 3px solid transparent;
+}
+.sidebar-item:hover { color: #fff; background: rgba(255,255,255,0.06); }
+.sidebar-item.active {
+  color: #fff; background: rgba(26,107,92,0.16);
+  border-left-color: #1a6b5c; font-weight: 600;
+}
+.sidebar-item .sb-icon { font-size: 16px; width: 22px; text-align: center; }
+
+/* ── 主区域 ── */
+.main-wrap { margin-left: 180px; min-height: 100vh; }
+.portal-topbar {
+  height: 52px; margin: 12px 20px 0; padding: 0 4px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.portal-topbar-title { font-size: 16px; font-weight: 600; color: #1a1f35; }
+.btn-logout-top {
+  height: 34px; padding: 0 16px; border-radius: 6px; cursor: pointer;
+  border: 1px solid #1a6b5c; background: #1a6b5c; color: #fff;
+  font-size: 13px; font-weight: 600; font-family: inherit;
+}
+.btn-logout-top:hover { background: #155a4d; }
+
+/* ── 用户信息卡 ── */
+.profile-card {
+  background: #1a6b5c;
+  border-radius: 14px; padding: 28px 32px; color: #fff;
+  margin: 20px 20px 0; display: flex; align-items: center; gap: 20px;
+  box-shadow: 0 8px 32px rgba(26,107,92,0.28);
+  position: relative; overflow: visible;
+  flex-wrap: wrap;
+}
+.profile-card::before {
+  content: ''; position: absolute; right: -30px; top: -30px;
+  width: 160px; height: 160px; border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  pointer-events: none;
+  z-index: 0;
+}
+.profile-avatar {
+  width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 700; flex-shrink: 0;
+  border: 3px solid rgba(255,255,255,0.3);
+  overflow: hidden;
+  position: relative; z-index: 1;
+}
+.profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.profile-info { flex: 1; min-width: 140px; position: relative; z-index: 1; }
+.profile-name { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.profile-meta { font-size: 13px; opacity: 0.85; display: flex; gap: 16px; flex-wrap: wrap; }
+.profile-meta span { display: flex; align-items: center; gap: 4px; }
+.profile-actions {
+  display: flex; gap: 10px; flex-shrink: 0; align-items: center;
+  position: relative; z-index: 2;
+}
+.btn-logout {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 32px; padding: 0 14px; border-radius: 6px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.85); background: #fff; color: #1a6b5c;
+  font-size: 13px; font-weight: 600; font-family: inherit; line-height: 1;
+}
+.btn-logout:hover { background: #f2f8f6; }
+
+/* ── 统计卡片行 ── */
+.stats-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+  margin: 20px 20px 0;
+}
+.stat-card {
+  background: #fff; border-radius: 12px; padding: 18px 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.stat-label { font-size: 13px; color: #8c8c8c; margin-bottom: 8px; }
+.stat-value { font-size: 28px; font-weight: 700; line-height: 1; }
+.stat-value.blue { color: #1677ff; }
+.stat-value.green { color: #52c41a; }
+.stat-value.orange { color: #fa8c16; }
+.stat-value.red { color: #ff4d4f; }
+
+/* ── 快捷申请区 ── */
+.quick-apply-section {
+  margin: 20px 20px 0;
+  background: #fff; border-radius: 12px; padding: 20px 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.section-title {
+  font-size: 14px; font-weight: 600; color: #1a1f35;
+  display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+}
+.quick-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+}
+.quick-btn {
+  border: 2px solid #e8e8e8; border-radius: 12px; padding: 20px 12px;
+  cursor: pointer; text-align: center; transition: all 0.2s;
+  background: #fafafa;
+}
+.quick-btn:hover { border-color: #1a6b5c; background: #f2f8f6; transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26,107,92,0.16);
+}
+.quick-btn .qb-icon { font-size: 32px; margin-bottom: 8px; }
+.quick-btn .qb-label { font-size: 13px; font-weight: 600; color: #1a1f35; }
+
+/* ── 双列内容区 ── */
+.content-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  margin: 20px 20px 0;
+}
+.content-full { margin: 16px 20px 40px; }
+
+/* ── 卡片通用 ── */
+.card {
+  background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.card-head {
+  padding: 14px 20px; border-bottom: 1px solid #f0f0f0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-head .card-title { font-size: 14px; font-weight: 600; color: #1a1f35; display: flex; align-items: center; gap: 8px; }
+.card-body { padding: 16px 20px; }
+.card-head .view-all { font-size: 12px; color: #1a6b5c; cursor: pointer; }
+.card-head .view-all:hover { text-decoration: underline; }
+
+/* ── 资产卡片网格 ── */
+.asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.asset-card {
+  border: 1px solid #e8e8e8; border-radius: 10px; padding: 14px; transition: box-shadow 0.2s; cursor: pointer;
+  background: #fafafa;
+}
+.asset-card:hover { box-shadow: 0 4px 12px rgba(26,107,92,0.12); border-color: #1a6b5c; }
+.asset-card-no { font-size: 11px; color: #8c8c8c; margin-bottom: 4px; }
+.asset-card-name { font-size: 13px; font-weight: 600; color: #1a1f35; margin-bottom: 6px; line-height: 1.4; }
+.asset-card-meta { font-size: 11px; color: #666; display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.asset-card-meta span { background: #f0f2f5; padding: 2px 6px; border-radius: 4px; }
+.asset-card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+
+/* ── 申请列表 ── */
+.apply-list { display: flex; flex-direction: column; gap: 8px; }
+.apply-item {
+  border: 1px solid #e8e8e8; border-radius: 10px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.apply-icon { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center;
+  justify-content: center; font-size: 16px; flex-shrink: 0; background: #f0f2f5; }
+.apply-body { flex: 1; min-width: 0; }
+.apply-title { font-size: 13px; font-weight: 600; color: #1a1f35; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.apply-sub { font-size: 11px; color: #8c8c8c; }
+.apply-extra { font-size: 10px; color:#bfbfbf; margin-top:2px; }
+.apply-extra span { margin-right:6px; }
+.apply-status { flex-shrink: 0; }
+.card-foot { border-top:1px solid #f0f0f0; padding:0 16px; }
+
+/* ── 空状态 ── */
+.empty { text-align: center; padding: 36px 20px; color: #8c8c8c; }
+.empty-icon { font-size: 36px; margin-bottom: 10px; }
+.empty-text { font-size: 13px; }
+
+/* ── 状态标签颜色 ── */
+.status-在用 { background: #e6f4ff; color: #1677ff; }
+.status-在库 { background: #f6ffed; color: #52c41a; }
+.status-维修中 { background: #fff7e6; color: #fa8c16; }
+
+/* ── 申请类型图标 ── */
+.type-icon-new_asset { background: #e6f4ff; }
+.type-icon-borrow { background: #f2f8f6; }
+.type-icon-return { background: #f6ffed; }
+.type-icon-repair { background: #fff7e6; }
+.type-icon-consumable { background: #fff0f6; }
+.type-icon-replace { background: #fcf4ec; }
+.type-icon-special { background: #f9f0ff; }
+
+/* ── 加载态 ── */
+.loading-wrap { text-align:center; padding: 48px; }
+.loading-wrap .el-icon { font-size: 28px; color: #1a6b5c; }
+
+/* ── 申请对话框美化 ── */
+.apply-dlg .apply-dlg-body { padding: 0 4px; }
+.apply-type-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  margin-bottom: 20px;
+}
+.type-card {
+  border: 2px solid #e8e8e8; border-radius: 12px; padding: 16px 10px;
+  cursor: pointer; text-align: center; transition: all 0.25s ease;
+  background: #fafafa; position: relative;
+}
+.type-card:hover:not(.disabled) { border-color: #1a6b5c; background: #f2f8f6; transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(26,107,92,0.16); }
+.type-card.active { border-color: #1a6b5c; background: #f2f8f6;
+  box-shadow: 0 2px 10px rgba(26,107,92,0.2); }
+.type-card.disabled { opacity: 0.55; cursor: pointer; }
+.type-card.disabled:hover { transform: none; box-shadow: none; }
+.type-emoji { font-size: 26px; margin-bottom: 6px; }
+.type-label { font-size: 13px; font-weight: 600; color: #1a1f35; }
+.type-desc { font-size: 11px; color: #8c8c8c; margin-top: 3px; }
+
+.form-tip { font-size: 12px; color: #8c8c8c; margin-top: 4px; line-height: 1.4; }
+
+/* ── 借用资产面板 ── */
+.borrow-section { background: #fafcff; border: 1px solid #d6e4ff; border-radius: 10px; padding: 14px; margin-bottom: 4px; }
+.borrow-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.borrow-title { font-size: 14px; font-weight: 600; color: #1a1f35; }
+.borrow-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+.borrow-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border: 1.5px solid #e8e8e8; border-radius: 8px; cursor: pointer;
+  transition: all 0.2s; position: relative; background: #fff;
+}
+.borrow-item:hover { border-color: #1a6b5c; background: #f2f8f6; }
+.borrow-item.selected { border-color: #1a6b5c; background: #e8f3f0; }
+.borrow-item-no { font-size: 12px; font-weight: 700; color: #1a6b5c; min-width: 100px; }
+.borrow-item-info { font-size: 13px; color: #333; flex: 1; }
+.borrow-item-loc { font-size: 11px; color: #8c8c8c; }
+.borrow-check {
+  width: 22px; height: 22px; border-radius: 50%; background: #1a6b5c;
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+.empty-borrow { text-align: center; padding: 24px; }
+.empty-borrow .empty-icon { font-size: 36px; margin-bottom: 8px; }
+.empty-borrow .empty-text { font-size: 13px; color: #666; margin-bottom: 4px; }
+.empty-borrow .empty-sub { font-size: 12px; color: #999; }
+
+/* ── 响应式 ── */
+@media (max-width: 900px) {
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .quick-grid { grid-template-columns: repeat(2, 1fr); }
+  .content-row { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .main-wrap { margin-left: 0; }
+  .portal-topbar { margin: 12px 12px 0; }
+  .profile-card { margin: 12px; padding: 20px; }
+  .stats-row, .quick-apply-section, .content-row, .content-full { margin-left: 12px; margin-right: 12px; }
+  .apply-type-grid { grid-template-columns: repeat(2, 1fr); }
+  .el-dialog { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; margin: 12px auto !important; }
+  html, body { overflow-x: hidden; max-width: 100vw; }
+}
+@media (max-width: 480px) {
+  .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .quick-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .profile-name { font-size: 18px; }
+}
+</style>
+</head>
+<body>
+<div id="app" v-cloak>
+
+  <!-- 左侧导航 -->
+  <div class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">🖥️</span> 资产<span>管理</span>
+    </div>
+    <div class="sidebar-nav">
+      <div class="sidebar-item active">👤 个人中心</div>
+      <div class="sidebar-item" @click="logout">🚪 退出登录</div>
+    </div>
+  </div>
+
+  <!-- 主区域 -->
+  <div class="main-wrap">
+    <div class="portal-topbar">
+      <div class="portal-topbar-title">个人中心</div>
+      <button type="button" class="btn-logout-top" @click="logout">退出登录</button>
+    </div>
+
+    <!-- ═══ 用户信息卡 ═══ -->
+    <div class="profile-card">
+      <div class="profile-avatar">
+        <img v-if="currentUser.avatar" :src="currentUser.avatar" />
+        <span v-else>{{ (currentUser.name||'?').charAt(0) }}</span>
+      </div>
+      <div class="profile-info">
+        <div class="profile-name">{{ currentUser.name || '加载中...' }}</div>
+        <div class="profile-meta">
+          <span v-if="currentUser.department">🏢 {{ currentUser.department }}</span>
+          <span v-if="currentUser.position">💼 {{ currentUser.position }}</span>
+          <span v-if="currentUser.role">🛡️ {{ currentUser.role }}</span>
+        </div>
+      </div>
+      <div class="profile-actions">
+        <!-- 身份切换：多角色用户可切换视图 -->
+        <el-dropdown v-if="availableRoles.length > 1" trigger="click" @command="switchRole">
+          <el-button size="small" type="primary" plain style="border-color:rgba(255,255,255,0.5);color:#fff">
+            <span style="display:inline-flex;align-items:center;gap:4px">
+              🔄 {{ currentRoleLabel }}
+              <span style="font-size:10px">▼</span>
+            </span>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item v-for="r in availableRoles" :key="r.value"
+                :command="r.value"
+                :style="{fontWeight: activeRole===r.value ? 'bold' : 'normal', color: activeRole===r.value ? '#1a6b5c' : ''}">
+                {{ r.icon }} {{ r.label }}
+                <span v-if="activeRole===r.value" style="margin-left:8px;color:#1a6b5c">✓</span>
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+        <button type="button" class="btn-logout" @click="logout">退出登录</button>
+      </div>
+    </div>
+
+    <!-- ═══ 飞书未绑定提醒 ═══ -->
+    <el-alert
+      v-if="!currentUser.larkUserId && !currentUser.lark_user_id && !currentUser.lark_open_id && !currentUser.lark_union_id"
+      title="⚠ 您尚未绑定 Lark 账号"
+      type="info"
+      :closable="true"
+      show-icon
+      style="margin-bottom:16px"
+    >
+      <template #default>
+        可在飞书内打开本应用使用免登；未绑定请联系超管在用户管理中填写 Lark User ID。
+      </template>
+    </el-alert>
+
+    <!-- ═══ 统计数字 ═══ -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">我的资产</div>
+        <div class="stat-value blue">{{ myAssets.length }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">领用耗材</div>
+        <div class="stat-value green">{{ myConsumables.length }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">待办事项</div>
+        <div class="stat-value orange">{{ pendingCount }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">维修中</div>
+        <div class="stat-value red">{{ repairCount }}</div>
+      </div>
+    </div>
+
+    <!-- ═══ 快捷申请 ═══ -->
+    <div class="quick-apply-section">
+      <div class="section-title">⚡ 快速申请</div>
+      <div class="quick-grid">
+        <div class="quick-btn" @click="openApplyDialog('new_asset')">
+          <div class="qb-icon">🖥️</div><div class="qb-label">申请资产</div>
+        </div>
+        <div class="quick-btn" @click="openApplyDialog('consumable')">
+          <div class="qb-icon">🧪</div><div class="qb-label">领用耗材</div>
+        </div>
+        <div class="quick-btn" @click="openApplyDialog('repair')">
+          <div class="qb-icon">🔧</div><div class="qb-label">报修申请</div>
+        </div>
+        <div class="quick-btn" @click="openApplyDialog('return')">
+          <div class="qb-icon">📦</div><div class="qb-label">归还资产</div>
+        </div>
+        <div class="quick-btn" @click="openApplyDialog('replace')">
+          <div class="qb-icon">🔄</div><div class="qb-label">更换设备</div>
+        </div>
+        <div class="quick-btn" @click="openApplyDialog('borrow')">
+          <div class="qb-icon">📤</div><div class="qb-label">借用资产</div>
+        </div>
+        <div class="quick-btn" @click="openApplyDialog('special')">
+          <div class="qb-icon">✨</div><div class="qb-label">特殊需求</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ 双列：我的资产 + 待办事项 ═══ -->
+    <div class="content-row">
+
+      <!-- 我资产 -->
+      <div class="card" style="display:flex;flex-direction:column">
+        <div class="card-head">
+          <span class="card-title">🖥️ 我的资产</span>
+          <span class="view-all" @click="expandAssets = !expandAssets">{{ expandAssets ? '收起' : '查看全部' }}</span>
+        </div>
+        <div class="card-body" style="flex:1">
+          <div v-if="assetsLoading" class="loading-wrap"><el-icon class="is-loading"><Loading /></el-icon></div>
+          <div v-else-if="myAssets.length === 0" class="empty">
+            <div class="empty-icon">🖥️</div>
+            <div class="empty-text">暂无名下资产</div>
+          </div>
+          <div v-else class="asset-grid">
+            <div class="asset-card" v-for="item in (expandAssets ? myAssets : myAssets.slice(0, 3))" :key="item.id" @click="viewAsset(item)">
+              <div class="asset-card-no">{{ item.asset_no }}</div>
+              <div class="asset-card-name">{{ item.category }} {{ item.brand }} {{ item.model }}</div>
+              <div class="asset-card-meta">
+                <span v-if="item.location">📍 {{ item.location }}</span>
+                <span v-if="item.sn">SN: {{ item.sn }}</span>
+              </div>
+              <div class="asset-card-footer">
+                <el-tag :class="'status-'+item.status" size="small" style="border:none">{{ item.status }}</el-tag>
+                <el-button size="small" type="primary" link @click.stop="openApplyDialog('repair', item)">报修</el-button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 申请记录（含状态筛选） -->
+      <div class="card" style="display:flex;flex-direction:column">
+        <div class="card-head">
+          <span class="card-title">📋 申请记录</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <el-select v-model="appStatusFilter" size="small" placeholder="全部状态" clearable style="width:110px" @change="filterApplications">
+              <el-option label="待审批" value="pending"></el-option>
+              <el-option label="已批准" value="approved"></el-option>
+              <el-option label="已拒绝" value="rejected"></el-option>
+            </el-select>
+            <span class="view-all" @click="showApplyFull = !showApplyFull">{{ showApplyFull ? '收起' : '查看全部' }}</span>
+          </div>
+        </div>
+        <div class="card-body" style="flex:1">
+          <div v-if="applyLoading" class="loading-wrap"><el-icon class="is-loading"><Loading /></el-icon></div>
+          <div v-else-if="filteredApplications.length === 0" class="empty">
+            <div class="empty-icon">📝</div>
+            <div class="empty-text">暂无申请记录</div>
+          </div>
+          <div v-else class="apply-list">
+            <div class="apply-item" v-for="item in (showApplyFull ? filteredApplications : filteredApplications.slice(0, 5))" :key="item.id">
+              <div class="apply-icon" :class="'type-icon-'+item.app_type">{{ typeEmoji(item.app_type) }}</div>
+              <div class="apply-body">
+                <div class="apply-title">{{ item.title }}</div>
+                <div class="apply-sub">
+                  {{ item.app_no }} · {{ applyTypeLabel(item.app_type) }} · {{ item.apply_time?.slice(0,16) }}
+                </div>
+                <div class="apply-extra" v-if="item.reviewer || item.review_time">
+                  <span v-if="item.reviewer">审批人：{{ item.reviewer }}</span>
+                  <span v-if="item.review_time">· {{ item.review_time?.slice(0,16) }}</span>
+                </div>
+              </div>
+              <div class="apply-status">
+                <el-tag v-if="item.status==='pending'" type="warning" size="small" effect="dark">待审批</el-tag>
+                <el-tag v-else-if="item.status==='approved'" type="success" size="small" effect="dark">已批准</el-tag>
+                <el-tag v-else-if="item.status==='rejected'" type="danger" size="small" effect="dark">已拒绝</el-tag>
+                <el-tag v-else type="info" size="small" effect="dark">{{ item.status }}</el-tag>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-foot" v-if="filteredApplications.length > 5 && !showApplyFull">
+          <span class="view-all" style="width:100%;text-align:center;padding:8px 0;cursor:pointer;color:#1a6b5c" @click="showApplyFull = true">
+            还有 {{ filteredApplications.length - 5 }} 条记录，点击展开
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ 全宽：耗材领用记录 ═══ -->
+    <div class="content-full">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">✏️ 耗材领用记录</span>
+          <span class="view-all" @click="expandCons = !expandCons">{{ expandCons ? '收起' : '查看全部' }}</span>
+        </div>
+        <div class="card-body">
+          <div v-if="consLoading" class="loading-wrap"><el-icon class="is-loading"><Loading /></el-icon></div>
+          <div v-else-if="myConsumables.length === 0" class="empty">
+            <div class="empty-icon">📦</div>
+            <div class="empty-text">暂无耗材领用记录</div>
+          </div>
+          <div v-else class="asset-grid">
+            <div class="asset-card" v-for="item in (expandCons ? myConsumables : myConsumables.slice(0, 4))" :key="item.id" @click="viewConsumable(item)">
+              <div class="asset-card-no">{{ item.item_no }}</div>
+              <div class="asset-card-name">{{ item.name }}</div>
+              <div class="asset-card-meta">
+                <span v-if="item.category">🏷️ {{ item.category }}</span>
+                <span v-if="item.brand">品牌: {{ item.brand }}</span>
+                <span v-if="item.model">规格: {{ item.model }}</span>
+              </div>
+              <div class="asset-card-footer">
+                <el-tag type="success" size="small" effect="light">已领用 {{ item.received_qty }}{{ item.unit || '个' }}</el-tag>
+                <span style="font-size:11px;color:#8c8c8c" v-if="item.last_receive_time">{{ item.last_receive_time.slice(0,10) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-wrap -->
+
+  <!-- ═══ 资产详情弹窗 ═══ -->
+  <el-dialog v-model="assetDlg.visible" title="资产详情" width="500px">
+    <div v-if="assetDlg.data">
+      <el-descriptions :column="2" border size="small">
+        <el-descriptions-item label="资产编号">{{ assetDlg.data.asset_no }}</el-descriptions-item>
+        <el-descriptions-item label="类目">{{ assetDlg.data.category }}</el-descriptions-item>
+        <el-descriptions-item label="品牌">{{ assetDlg.data.brand }}</el-descriptions-item>
+        <el-descriptions-item label="型号">{{ assetDlg.data.model }}</el-descriptions-item>
+        <el-descriptions-item label="SN">{{ assetDlg.data.sn || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">{{ assetDlg.data.status }}</el-descriptions-item>
+        <el-descriptions-item label="存放位置">{{ assetDlg.data.location || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="购入日期">{{ assetDlg.data.purchase_date || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="质保到期">{{ assetDlg.data.warranty_expire || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="备注" :span="2">{{ assetDlg.data.notes || '-' }}</el-descriptions-item>
+      </el-descriptions>
+    </div>
+    <template #footer>
+      <el-button @click="openApplyDialog('repair', assetDlg.data); assetDlg.visible=false" type="warning" plain>📌 申请维修</el-button>
+      <el-button @click="openApplyDialog('return', assetDlg.data); assetDlg.visible=false" type="primary" plain>📥 申请归还</el-button>
+      <el-button @click="assetDlg.visible=false">关闭</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- ═══ 耗材详情弹窗 ═══ -->
+  <el-dialog v-model="consDlg.visible" title="耗材详情" width="480px">
+    <div v-if="consDlg.data">
+      <el-descriptions :column="2" border size="small">
+        <el-descriptions-item label="耗材编号">{{ consDlg.data.item_no }}</el-descriptions-item>
+        <el-descriptions-item label="名称">{{ consDlg.data.name }}</el-descriptions-item>
+        <el-descriptions-item label="类目">{{ consDlg.data.category || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="品牌">{{ consDlg.data.brand || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="规格">{{ consDlg.data.model || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="已领用">{{ consDlg.data.received_qty }} {{ consDlg.data.unit || '个' }}</el-descriptions-item>
+        <el-descriptions-item label="存放位置">{{ consDlg.data.location || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="最近领用">{{ (consDlg.data.last_receive_time || '').slice(0,16) || '-' }}</el-descriptions-item>
+      </el-descriptions>
+    </div>
+    <template #footer>
+      <el-button @click="openApplyDialog('consumable', consDlg.data); consDlg.visible=false" type="primary" plain>🧪 再次申请领用</el-button>
+      <el-button @click="consDlg.visible=false">关闭</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- ═══ 发起申请弹窗（美化版） ═══ -->
+  <el-dialog v-model="applyDlg.visible" :title="'发起申请 - '+applyTypeLabel(applyDlg.type)" width="560px" class="apply-dlg">
+    <div class="apply-dlg-body">
+      <!-- 申请类型选择（未预设类型时显示） -->
+      <div class="apply-type-grid" v-if="!applyDlg.presetType">
+        <div v-for="t in applyTypes" :key="t.value"
+             class="type-card" :class="{active: applyDlg.type===t.value, disabled: t.value==='borrow'}"
+             @click="t.value!=='borrow' && (applyDlg.type=t.value); t.value==='borrow' && openBorrowPanel()">
+          <div class="type-emoji">{{ t.emoji }}</div>
+          <div class="type-label">{{ t.label }}</div>
+          <div class="type-desc">{{ t.desc }}</div>
+        </div>
+      </div>
+
+      <el-form :model="applyDlg.form" label-width="100px" size="default" class="apply-form">
+
+        <!-- 更换设备：关联名下现有资产 -->
+        <el-form-item label="更换设备" v-if="applyDlg.type==='replace'">
+          <el-select v-model="applyDlg.form.asset_id" filterable placeholder="选择要更换的设备（您名下的资产）" style="width:100%">
+            <el-option-group label="我的资产">
+              <el-option v-for="a in myAssets" :key="a.id"
+                :label="a.asset_no + ' · ' + a.category + ' ' + a.brand + ' ' + a.model"
+                :value="a.id">
+                <span style="display:flex;justify-content:space-between;align-items:center">
+                  <span>{{ a.asset_no }} · {{ a.category }} {{ a.brand }} {{ a.model }}</span>
+                  <el-tag size="small" :class="'status-'+a.status">{{ a.status }}</el-tag>
+                </span>
+              </el-option>
+            </el-option-group>
+          </el-select>
+          <div class="form-tip">选择您目前正在使用、需要更换的那台设备</div>
+        </el-form-item>
+
+        <!-- 归还/维修/借用：关联资产 -->
+        <el-form-item label="关联资产" v-if="['return','repair'].includes(applyDlg.type)">
+          <el-select v-model="applyDlg.form.asset_no" filterable allow-create placeholder="选择或输入资产编号" style="width:100%">
+            <el-option v-for="a in myAssets" :key="a.id" :label="a.asset_no+' - '+a.brand+' '+a.model" :value="a.asset_no"/>
+          </el-select>
+        </el-form-item>
+
+        <!-- 借用资产：显示可借库存 -->
+        <div v-if="applyDlg.type==='borrow'" class="borrow-section">
+          <div class="borrow-header">
+            <span class="borrow-title">📦 可借用的资产</span>
+            <el-tag type="success" size="small" effect="dark">共 {{ borrowableAssets.length }} 件可借</el-tag>
+          </div>
+          <div v-if="borrowableLoading" class="loading-wrap" style="padding:20px"><el-icon class="is-loading"><Loading /></el-icon></div>
+          <div v-else-if="borrowableAssets.length === 0" class="empty-borrow">
+            <div class="empty-icon">📭</div>
+            <div class="empty-text">当前没有可借用的资产</div>
+            <div class="empty-sub">请联系管理员在资产台账中标记"可借"资产</div>
+          </div>
+          <div v-else class="borrow-list">
+            <div v-for="item in borrowableAssets" :key="item.id"
+                 class="borrow-item" :class="{selected: applyDlg.form.asset_id===item.id}"
+                 @click="selectBorrowAsset(item)">
+              <div class="borrow-item-no">{{ item.asset_no }}</div>
+              <div class="borrow-item-info">{{ item.category }} {{ item.brand }} {{ item.model }}</div>
+              <div class="borrow-item-loc" v-if="item.location">📍 {{ item.location }}</div>
+              <div class="borrow-check" v-if="applyDlg.form.asset_id===item.id">✓</div>
+            </div>
+          </div>
+          <el-form-item label="归还日期" style="margin-top:12px">
+            <el-date-picker v-model="applyDlg.form.borrow_return_date" type="date" placeholder="预计归还日期（可选）" value-format="YYYY-MM-DD" style="width:100%"/>
+          </el-form-item>
+        </div>
+
+        <el-form-item label="申请标题">
+          <el-input v-model="applyDlg.form.title" placeholder="请简要描述申请内容" />
+        </el-form-item>
+
+        <el-form-item label="申请原因">
+          <el-input v-model="applyDlg.form.reason" type="textarea" :rows="3" placeholder="请说明申请原因或具体需求" />
+        </el-form-item>
+
+        <template v-if="['new_asset','replace'].includes(applyDlg.type)">
+          <el-form-item :label="applyDlg.type==='replace' ? '新设备类型' : '设备类型'">
+            <el-input v-model="applyDlg.form.detail_category" :placeholder="applyDlg.type==='replace' ? '如：笔记本电脑、显示器（更换后）' : '如：笔记本电脑、显示器'" />
+          </el-form-item>
+          <el-form-item label="品牌/型号">
+            <el-input v-model="applyDlg.form.detail_model" placeholder="如：MacBook Pro 14寸 M3" />
+          </el-form-item>
+          <el-form-item v-if="applyDlg.type==='replace'" label="更换原因">
+            <el-input v-model="applyDlg.form.detail_reason" type="textarea" :rows="2" placeholder="请说明更换原因（如：设备故障/性能不足）" />
+          </el-form-item>
+        </template>
+
+        <template v-if="applyDlg.type==='consumable'">
+          <el-form-item label="耗材名称">
+            <el-input v-model="applyDlg.form.detail_name" placeholder="如：A4纸、鼠标垫" />
+          </el-form-item>
+          <el-form-item label="数量">
+            <el-input-number v-model="applyDlg.form.detail_qty" :min="1" :max="999" style="width:140px"/>
+          </el-form-item>
+        </template>
+      </el-form>
+    </div>
+    <template #footer>
+      <el-button @click="applyDlg.visible=false">取消</el-button>
+      <el-button type="primary" :loading="applyDlg.submitting" @click="submitApply">提交申请</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- ═══ 修改密码弹窗 ═══ -->
+  <el-dialog v-model="showPwdDlg" title="修改密码" width="400px">
+    <el-form :model="pwdForm" label-width="80px" size="default">
+      <el-form-item label="旧密码">
+        <el-input v-model="pwdForm.oldPassword" type="password" show-password placeholder="如未设置过密码可留空" />
+      </el-form-item>
+      <el-form-item label="新密码">
+        <el-input v-model="pwdForm.password" type="password" show-password placeholder="输入新密码" />
+      </el-form-item>
+      <el-form-item label="确认密码">
+        <el-input v-model="pwdForm.confirm" type="password" show-password placeholder="再次输入新密码" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="showPwdDlg=false">取消</el-button>
+      <el-button type="primary" @click="changePassword">确认修改</el-button>
+    </template>
+  </el-dialog>
+
+</div><!-- /app -->
+
+<script>
+const { createApp, ref, reactive, computed, onMounted } = Vue;
+const API = '/api';
+
+createApp({
+  setup() {
+    const tab = ref('assets');
+    const currentUser = reactive({});
+    const myAssets = ref([]);
+    const assetsLoading = ref(false);
+    const myConsumables = ref([]);
+    const consLoading = ref(false);
+    const applications = ref([]);
+    const applyLoading = ref(false);
+    const appStatusFilter = ref('');
+    const showApplyFull = ref(false);
+    const filteredApplications = computed(() => {
+      if (!appStatusFilter.value) return applications.value;
+      return applications.value.filter(a => a.status === appStatusFilter.value);
+    });
+    const expandAssets = ref(false);
+    const expandCons = ref(false);
+    const showPwdDlg = ref(false);
+    const pwdForm = reactive({ oldPassword: '', password: '', confirm: '' });
+
+    // ── 身份切换 ──
+    const activeRole = ref(localStorage.getItem('ams_active_role') || '');
+    const adminRoles = ['超管', '管理员', '普通管理员', '操作员', '财务'];
+    const availableRoles = computed(() => {
+      const roles = [{ value: 'user', label: '普通用户视图', icon: '👤' }];
+      if (currentUser.role && adminRoles.includes(currentUser.role)) {
+        roles.push({ value: 'admin', label: currentUser.role + ' 视图', icon: '🛡️' });
+      }
+      return roles;
+    });
+    const currentRoleLabel = computed(() => {
+      const found = availableRoles.value.find(r => r.value === activeRole.value);
+      return found ? found.label : '切换身份';
+    });
+
+    function switchRole(role) {
+      activeRole.value = role;
+      localStorage.setItem('ams_active_role', role);
+      if (role === 'admin') {
+        window.location.href = '/main.html';
+      } else {
+        // 刷新当前页以重置为纯用户视角
+        window.location.reload();
+      }
+    }
+
+    const assetDlg = reactive({ visible: false, data: null });
+    const consDlg = reactive({ visible: false, data: null });
+    const applyDlg = reactive({
+      visible: false,
+      type: 'new_asset',
+      presetType: false,
+      submitting: false,
+      form: {}
+    });
+
+    const borrowableAssets = ref([]);
+    const borrowableLoading = ref(false);
+
+    const pendingCount = computed(() => applications.value.filter(a => a.status === 'pending').length);
+    const repairCount = computed(() => applications.value.filter(a =>
+      a.app_type === 'repair' && a.status === 'pending'
+    ).length);
+
+    const applyTypes = [
+      { value: 'new_asset',   emoji: '🆕', label: '新设备申请',   desc: '申请配备新设备' },
+      { value: 'replace',     emoji: '🔄', label: '更换设备',     desc: '更换现有设备' },
+      { value: 'consumable',  emoji: '🧪', label: '耗材申请',     desc: '领用消耗品' },
+      { value: 'borrow',      emoji: '📤', label: '借用资产',     desc: '临时借用在库资产', isBorrow: true },
+      { value: 'return',      emoji: '📥', label: '归还资产',     desc: '归还已借用资产' },
+      { value: 'repair',      emoji: '🔧', label: '申请维修',     desc: '设备故障报修' },
+      { value: 'special',     emoji: '✨', label: '特殊需求申请', desc: '其他特殊需求' },
+    ];
+
+    function applyTypeLabel(type) {
+      return applyTypes.find(t => t.value === type)?.label || type;
+    }
+    function typeEmoji(type) {
+      return applyTypes.find(t => t.value === type)?.emoji || '📋';
+    }
+
+    function getToken() { return localStorage.getItem('ams_token'); }
+    function authHeader() { return { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' }; }
+
+    async function initAuth() {
+      const token = getToken();
+      if (!token) { window.location.href = '/login.html'; return; }
+      try {
+        const r = await fetch(`${API}/auth/user`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const d = await r.json();
+        if (!d.success) { window.location.href = '/login.html'; return; }
+        Object.assign(currentUser, d.user);
+        // 同步刷新 localStorage 里的用户缓存，覆盖历史遗留的 role 脏值（如 role='user'），
+        // 避免 main.html/index.html 的同步守卫读到过期角色、把超管误踢回 /my.html 形成循环
+        try { localStorage.setItem('ams_user', JSON.stringify(d.user)); } catch (e) {}
+        // 管理角色也可停留在用户门户：仅当用户“上次选择”的是后台视图时才跳转，
+        // 否则留在用户门户，由右上角身份切换器自行切换到后台（修复无法切换问题）
+        const preferred = localStorage.getItem('ams_active_role');
+        if (preferred === 'admin' && adminRoles.includes(d.user.role)) {
+          window.location.href = '/main.html';
+        }
+      } catch (e) {
+        window.location.href = '/login.html';
+      }
+    }
+
+    async function loadMyAssets() {
+      assetsLoading.value = true;
+      try {
+        const r = await fetch(`${API}/my/assets`, { headers: authHeader() });
+        const d = await r.json();
+        myAssets.value = d.success ? d.data : [];
+      } catch (e) {
+        myAssets.value = [];
+      } finally {
+        assetsLoading.value = false;
+      }
+    }
+
+    async function loadApplications() {
+      applyLoading.value = true;
+      try {
+        const r = await fetch(`${API}/my/applications`, { headers: authHeader() });
+        const d = await r.json();
+        applications.value = d.success ? d.data : [];
+      } finally {
+        applyLoading.value = false;
+      }
+    }
+
+    async function loadMyConsumables() {
+      consLoading.value = true;
+      try {
+        const r = await fetch(`${API}/my/consumables`, { headers: authHeader() });
+        const d = await r.json();
+        myConsumables.value = d.success ? d.data : [];
+      } catch (e) {
+        myConsumables.value = [];
+      } finally {
+        consLoading.value = false;
+      }
+    }
+
+    function viewAsset(item) { assetDlg.data = item; assetDlg.visible = true; }
+    function viewConsumable(item) { consDlg.data = item; consDlg.visible = true; }
+
+    function openApplyDialog(type, asset = null) {
+      applyDlg.type = type;
+      applyDlg.presetType = !!asset || type === 'repair';
+      applyDlg.form = {
+        asset_id: asset?.id || '',
+        asset_no: asset?.asset_no || '',
+        title: '',
+        reason: '',
+        detail_category: '',
+        detail_model: '',
+        detail_name: '',
+        detail_qty: 1,
+        detail_reason: '',
+        borrow_return_date: ''
+      };
+      if (asset) {
+        const labels = { repair: '申请维修', return: '申请归还', borrow: '借用申请' };
+        applyDlg.form.title = `${labels[type] || '申请'} - ${asset.category} ${asset.brand} ${asset.model}`;
+      }
+      // 借用类型：自动加载可借资产
+      if (type === 'borrow') {
+        loadBorrowableAssets();
+      }
+      applyDlg.visible = true;
+    }
+
+    function openBorrowPanel() {
+      openApplyDialog('borrow');
+    }
+
+    async function loadBorrowableAssets() {
+      borrowableLoading.value = true;
+      try {
+        const r = await fetch(`${API}/assets/borrowable`, { headers: authHeader() });
+        const d = await r.json();
+        borrowableAssets.value = d.success ? d.data : [];
+      } catch (e) {
+        borrowableAssets.value = [];
+      } finally {
+        borrowableLoading.value = false;
+      }
+    }
+
+    function selectBorrowAsset(item) {
+      applyDlg.form.asset_id = item.id;
+      applyDlg.form.asset_no = item.asset_no;
+      if (!applyDlg.form.title) {
+        applyDlg.form.title = `借用申请 - ${item.category} ${item.brand} ${item.model}`;
+      }
+    }
+
+    async function submitApply() {
+      if (!applyDlg.type) { ElementPlus.ElMessage.warning('请选择申请类型'); return; }
+      if (applyDlg.type === 'borrow' && !applyDlg.form.asset_id) {
+        ElementPlus.ElMessage.warning('请选择要借用的资产'); return;
+      }
+      applyDlg.submitting = true;
+      try {
+        const detail = {};
+        if (applyDlg.type === 'new_asset' || applyDlg.type === 'replace') {
+          detail.category = applyDlg.form.detail_category;
+          detail.model    = applyDlg.form.detail_model;
+          if (applyDlg.type === 'replace') {
+            detail.reason = applyDlg.form.detail_reason;
+            // 更换设备必须选一台现有资产
+            if (!applyDlg.form.asset_id) {
+              ElementPlus.ElMessage.warning('请选择要更换的设备'); return;
+            }
+          }
+        } else if (applyDlg.type === 'consumable') {
+          detail.name = applyDlg.form.detail_name;
+          detail.qty  = applyDlg.form.detail_qty;
+        } else if (applyDlg.type === 'borrow') {
+          detail.borrow_return_date = applyDlg.form.borrow_return_date || '';
+        }
+        const r = await fetch(`${API}/my/applications`, {
+          method: 'POST',
+          headers: authHeader(),
+          body: JSON.stringify({
+            app_type: applyDlg.type,
+            asset_id: applyDlg.form.asset_id || '',
+            asset_no: applyDlg.form.asset_no || '',
+            title:    applyDlg.form.title,
+            reason:   applyDlg.form.reason,
+            detail
+          })
+        });
+        const d = await r.json();
+        if (d.success) {
+          ElementPlus.ElMessage.success(`申请已提交！单号：${d.app_no}`);
+          applyDlg.visible = false;
+          loadApplications();
+        } else {
+          ElementPlus.ElMessage.error(d.error || '提交失败');
+        }
+      } finally {
+        applyDlg.submitting = false;
+      }
+    }
+
+    async function changePassword() {
+      if (!pwdForm.password) { ElementPlus.ElMessage.warning('请输入新密码'); return; }
+      if (pwdForm.password !== pwdForm.confirm) { ElementPlus.ElMessage.error('两次密码不一致'); return; }
+      try {
+        const r = await fetch(`${API}/auth/change-password`, {
+          method: 'POST',
+          headers: authHeader(),
+          body: JSON.stringify({ old_password: pwdForm.oldPassword, new_password: pwdForm.password })
+        });
+        const d = await r.json();
+        if (d.success) {
+          ElementPlus.ElMessage.success('密码修改成功');
+          showPwdDlg.value = false;
+          pwdForm.oldPassword = '';
+          pwdForm.password = '';
+          pwdForm.confirm = '';
+        } else {
+          ElementPlus.ElMessage.error(d.error || '修改失败');
+        }
+      } catch (e) {
+        ElementPlus.ElMessage.error('网络错误');
+      }
+    }
+
+    function logout() {
+      try {
+        localStorage.removeItem('ams_token');
+        localStorage.removeItem('ams_user');
+        localStorage.removeItem('ams_active_role');
+      } catch (e) {}
+      window.location.href = '/login.html';
+    }
+
+    onMounted(() => {
+      initAuth();
+      loadMyAssets();
+      loadApplications();
+      loadMyConsumables();
+    });
+
+    return {
+      tab, currentUser, myAssets, assetsLoading,
+      myConsumables, consLoading,
+      applications, applyLoading, pendingCount, repairCount,
+      appStatusFilter, filteredApplications, showApplyFull,
+      expandAssets, expandCons, showPwdDlg, pwdForm,
+      assetDlg, consDlg, applyDlg, applyTypes,
+      borrowableAssets, borrowableLoading,
+      applyTypeLabel, typeEmoji,
+      viewAsset, viewConsumable, openApplyDialog, openBorrowPanel, selectBorrowAsset, submitApply,
+      loadApplications, loadMyConsumables, logout, changePassword,
+      // 身份切换
+      activeRole, availableRoles, currentRoleLabel, switchRole,
+    };
+  }
+}).use(ElementPlus, { locale: ElementPlusLocaleZhCn }).mount('#app');
+</script>
+</body>
+</html>

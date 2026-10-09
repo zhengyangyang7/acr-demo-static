@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<script src="./ams-role.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>审批中心 - 企业资产管理系统</title>
+<link rel="stylesheet" href="./lib/element-plus.index.css">
+<script src="./lib/vue.global.prod.js"></script>
+<script src="./lib/element-plus.index.full.min.js"></script>
+<script src="./lib/element-plus-zh-cn.min.js"></script>
+<script src="./ams-ep-zh.js"></script>
+<script src="./lib/element-plus-icons.iife.min.js"></script>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f0f2f5; }
+.app-container { max-width: 1280px; margin: 0 auto; padding: 20px; }
+.header {
+  background: #1a6b5c;
+  color: #fff; padding: 24px 20px; border-radius: 12px; margin-bottom: 20px;
+}
+.header h1 { margin: 0 0 8px; font-size: 22px; }
+.header p { margin: 0; opacity: 0.9; font-size: 14px; }
+.back-link {
+  display: inline-flex; align-items: center; gap: 6px; color: #1a6b5c;
+  text-decoration: none; font-size: 14px; margin-bottom: 16px;
+}
+.back-link:hover { opacity: 0.8; }
+.filter-bar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.detail-block { padding: 4px 0; }
+.detail-row { display: flex; font-size: 13px; line-height: 1.9; }
+.detail-label { width: 96px; color: #8c8c8c; flex-shrink: 0; }
+.detail-value { color: #1a1f35; word-break: break-all; }
+.proof-link { color: #1677ff; text-decoration: none; margin-right: 12px; }
+.proof-link:hover { text-decoration: underline; }
+.table-scroll { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media (max-width: 768px) {
+  html, body { overflow-x: hidden; max-width: 100vw; }
+  .app-container { padding: 12px; max-width: 100%; }
+  .header { padding: 16px; }
+  .header h1 { font-size: 18px; }
+  .el-dialog { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; margin: 12px auto !important; }
+}
+</style>
+<script src="./auth-guard.js"></script>
+</head>
+<body>
+<div id="app">
+  <div class="app-container">
+    <a href="index.html" class="back-link"><el-icon><Back /></el-icon> 返回首页</a>
+
+    <div class="header">
+      <h1>📋 审批中心</h1>
+      <p>采购入库 / 资产删除 / 资产申请 / 资产操作 统一审批；新资产通过后可在「待发放」确认出库</p>
+    </div>
+
+    <el-tabs v-model="activeTab" @tab-change="onTabChange" style="margin-bottom:12px">
+      <el-tab-pane label="待审批 / 已处理" name="approvals" />
+      <el-tab-pane :label="'待发放 (' + fulfillTotal + ')'" name="fulfill" />
+    </el-tabs>
+
+    <div v-show="activeTab === 'approvals'">
+    <div class="filter-bar">
+      <el-select v-model="filter.applyType" placeholder="全部类型" clearable style="width: 180px" @change="loadApprovals">
+        <el-option v-for="t in allTypes" :key="t" :label="t" :value="t" />
+      </el-select>
+      <el-select v-model="filter.status" placeholder="全部状态" clearable style="width: 140px" @change="loadApprovals">
+        <el-option label="待审批" value="pending" />
+        <el-option label="已通过" value="approved" />
+        <el-option label="已拒绝" value="rejected" />
+      </el-select>
+      <el-button type="primary" @click="loadApprovals"><el-icon><Refresh /></el-icon> 刷新</el-button>
+      <span style="margin-left:auto;color:#8c8c8c;font-size:13px">共 {{ total }} 条</span>
+    </div>
+
+    <div class="table-scroll">
+    <el-table :data="tableData" v-loading="loading" border stripe style="width: 100%">
+      <el-table-column type="expand">
+        <template #default="{ row }">
+          <div class="detail-block">
+            <div v-for="d in detailRows(row)" :key="d.label" class="detail-row">
+              <span class="detail-label">{{ d.label }}</span>
+              <span class="detail-value">{{ d.value || '—' }}</span>
+            </div>
+            <div v-if="row.info && row.info.proof_photos && row.info.proof_photos.length" class="detail-row">
+              <span class="detail-label">证明照片</span>
+              <span class="detail-value">
+                <a v-for="p in row.info.proof_photos" :key="p.id" class="proof-link"
+                   :href="'/api/photos/' + p.id" target="_blank">{{ p.file_name }}</a>
+              </span>
+            </div>
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column prop="apply_type" label="类型" width="120">
+        <template #default="{ row }">
+          <el-tag :type="typeTag(row.apply_type)" size="small">{{ row.apply_type }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column prop="title" label="标题" min-width="220" />
+      <el-table-column prop="apply_by" label="申请人" width="120" />
+      <el-table-column prop="created_at" label="申请时间" width="170" />
+      <el-table-column prop="status" label="状态" width="100">
+        <template #default="{ row }">
+          <el-tag :type="statusType(row.status)" size="small">{{ row.status }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="160" fixed="right">
+        <template #default="{ row }">
+          <template v-if="row.status === '待审批'">
+            <el-button type="success" size="small" @click="openDialog(row, 'approve')">通过</el-button>
+            <el-button type="danger" size="small" @click="openDialog(row, 'reject')">拒绝</el-button>
+          </template>
+          <span v-else style="color:#8c8c8c;font-size:13px">已处理</span>
+        </template>
+      </el-table-column>
+    </el-table>
+    </div>
+
+    <el-pagination v-if="total > pageSize" style="margin-top:16px;justify-content:flex-end;display:flex"
+      layout="prev, pager, next" :total="total" :page-size="pageSize"
+      :current-page="page" @current-change="(p) => { page = p; loadApprovals(); }" />
+    </div>
+
+    <div v-show="activeTab === 'fulfill'">
+      <div class="filter-bar">
+        <el-button type="primary" @click="loadFulfillable"><el-icon><Refresh /></el-icon> 刷新待发放</el-button>
+        <span style="margin-left:auto;color:#8c8c8c;font-size:13px">共 {{ fulfillTotal }} 条</span>
+      </div>
+      <div class="table-scroll">
+      <el-table :data="fulfillData" v-loading="fulfillLoading" border stripe style="width:100%">
+        <el-table-column prop="app_no" label="申请单号" width="160" />
+        <el-table-column prop="app_type" label="类型" width="120" />
+        <el-table-column prop="applicant_name" label="申请人" width="120" />
+        <el-table-column prop="title" label="标题" min-width="180" />
+        <el-table-column prop="reason" label="原因" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="review_time" label="通过时间" width="170" />
+        <el-table-column label="采购订单" width="180">
+          <template #default="{ row }">
+            <span v-if="row.po_order_no" style="font-family:monospace;color:#1a6b5c">{{ row.po_order_no }}</span>
+            <el-button v-else size="small" :loading="row._creatingPo" @click="createPoFromApp(row)">生成采购订单</el-button>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="120" fixed="right">
+          <template #default="{ row }">
+            <el-button type="primary" size="small" @click="openFulfill(row)">发放</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      </div>
+    </div>
+  </div>
+
+  <el-dialog v-model="dialog.visible" :title="dialog.action === 'approve' ? '通过审批' : '拒绝审批'" width="460px">
+    <el-descriptions :column="1" border size="small" style="margin-bottom:16px">
+      <el-descriptions-item label="类型">{{ dialog.row?.apply_type }}</el-descriptions-item>
+      <el-descriptions-item label="标题">{{ dialog.row?.title }}</el-descriptions-item>
+      <el-descriptions-item label="申请人">{{ dialog.row?.apply_by }}</el-descriptions-item>
+    </el-descriptions>
+    <el-form label-width="80px">
+      <el-form-item label="审批人"><el-input v-model="dialog.approver" placeholder="默认：当前登录人" /></el-form-item>
+      <el-form-item label="备注"><el-input v-model="dialog.note" type="textarea" :rows="3" /></el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="dialog.visible = false">取消</el-button>
+      <el-button :type="dialog.action === 'approve' ? 'success' : 'danger'" @click="submitApprove">确认</el-button>
+    </template>
+  </el-dialog>
+
+  <el-dialog v-model="fulfillDlg.visible" title="确认发放" width="520px">
+    <el-descriptions :column="1" border size="small" style="margin-bottom:16px">
+      <el-descriptions-item label="申请单">{{ fulfillDlg.row?.app_no }}</el-descriptions-item>
+      <el-descriptions-item label="申请人">{{ fulfillDlg.row?.applicant_name }}</el-descriptions-item>
+      <el-descriptions-item label="标题">{{ fulfillDlg.row?.title }}</el-descriptions-item>
+    </el-descriptions>
+    <el-form label-width="100px">
+      <el-form-item label="在库资产" required>
+        <el-select v-model="fulfillDlg.assetId" filterable placeholder="选择要发放的在库资产" style="width:100%">
+          <el-option v-for="a in stockAssets" :key="a.id"
+            :label="a.asset_no + ' · ' + (a.category||'') + ' ' + (a.brand||'')"
+            :value="a.id" />
+        </el-select>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="fulfillDlg.visible = false">取消</el-button>
+      <el-button type="primary" @click="submitFulfill">确认发放</el-button>
+    </template>
+  </el-dialog>
+</div>
+
+<script>
+const { createApp, ref, reactive } = Vue;
+const API = '/api';
+
+const OP_PAYLOAD_LABELS = {
+  target_user: '目标人员', to_location: '目标位置', operator: '经办人', remark: '备注',
+  to_subject: '目标主体', to_region: '目标区域',
+  fault_desc: '故障描述', repair_vendor: '维修厂商', submit_by: '提交人', repair_notes: '维修备注',
+  dispose_type: '处置方式', reason: '处置原因', approved_by: '批准人', dispose_date: '处置日期', notes: '备注',
+  user_name: '使用人', dept: '部门', use_date: '使用日期', return_date: '归还日期', proof_photos: '证明照片'
+};
+const APP_TYPE_ZH = {
+  new_asset: '新资产申请', borrow: '借用申请', return: '归还申请', repair: '报修申请',
+  consumable: '耗材领用', replace: '更换设备申请', special: '特殊需求申请'
+};
+const DETAIL_LABELS = {
+  category: '类目', model: '型号/配置', reason: '原因说明', name: '耗材名称',
+  qty: '数量', quantity: '数量', item_id: '耗材ID', asset_id: '资产ID',
+  borrow_return_date: '预计归还日', fault_desc: '故障描述', note: '备注'
+};
+const APP_FIELDS = {
+  app_no: '申请单号', app_type: '申请类型', app_type_zh: '申请类型', applicant_name: '申请人', reason: '申请原因',
+  detail: '申请明细', status: '状态', apply_time: '申请时间', created_at: '创建时间',
+  review_comment: '审批意见', reviewer_name: '审批人', review_time: '审批时间',
+  asset_no: '资产编号', title: '标题', fulfilled: '是否已发放'
+};
+const APP_SKIP = new Set(['id', 'applicant_id', 'reviewer_id', 'asset_id', 'po_id', 'close_time', 'detail', 'app_type']);
+const STATUS_ZH = { pending: '待审批', approved: '已通过', rejected: '已驳回', processing: '审核中' };
+
+createApp({
+  setup() {
+    const allTypes = ['采购入库', '资产删除', '资产申请', '资产出库', '资产回收', '资产调拨', '资产转移', '维修申请', '资产处置'];
+    const filter = reactive({ applyType: '', status: '' });
+    const tableData = ref([]);
+    const loading = ref(false);
+    const total = ref(0);
+    const page = ref(1);
+    const pageSize = 20;
+    const dialog = reactive({ visible: false, action: 'approve', row: null, approver: '', note: '' });
+    const activeTab = ref('approvals');
+    const fulfillData = ref([]);
+    const fulfillLoading = ref(false);
+    const fulfillTotal = ref(0);
+    const stockAssets = ref([]);
+    const fulfillDlg = reactive({ visible: false, row: null, assetId: null });
+
+    function statusType(s) {
+      return { '待审批': 'warning', '已通过': 'success', '已拒绝': 'danger' }[s] || 'info';
+    }
+    function typeTag(t) {
+      if (t === '采购入库') return 'primary';
+      if (t === '资产删除') return 'danger';
+      if (t === '资产申请') return '';
+      if (t === '资产处置') return 'warning';
+      return 'info';
+    }
+
+    function detailRows(row) {
+      const info = row.info || {};
+      if (row.apply_type === '采购入库') {
+        return [
+          { label: '订单号', value: info.order_no },
+          { label: '订单ID', value: info.order_id },
+          { label: '涉及资产数', value: Array.isArray(info.asset_ids) ? info.asset_ids.length : '-' }
+        ];
+      }
+      if (row.apply_type === '资产删除') {
+        return [
+          { label: '删除对象', value: info.target_type === 'asset' ? '固定资产' : (info.target_type === 'consumable' ? '耗材' : info.target_type) },
+          { label: '编号', value: info.target_no },
+          { label: '删除原因', value: info.reason }
+        ];
+      }
+      if (row.apply_type === '资产申请') {
+        const rows = [];
+        const push = (label, value) => {
+          if (value === '' || value === null || value === undefined) return;
+          rows.push({ label, value: typeof value === 'boolean' ? (value ? '是' : '否') : String(value) });
+        };
+        push('申请单号', info.app_no);
+        push('申请类型', info.app_type_zh || APP_TYPE_ZH[info.app_type] || info.app_type);
+        push('申请人', info.applicant_name);
+        push('标题', info.title);
+        push('申请原因', info.reason);
+        push('资产编号', info.asset_no);
+        push('状态', STATUS_ZH[info.status] || info.status);
+        push('审批人', info.reviewer_name);
+        push('审批意见', info.review_comment);
+        push('审批时间', info.review_time);
+        if (info.fulfilled === 1 || info.fulfilled === true) push('是否已发放', '已发放');
+        else if (info.fulfilled === 0 || info.fulfilled === false) push('是否已发放', '未发放');
+        let detail = info.detail;
+        if (typeof detail === 'string') {
+          try { detail = JSON.parse(detail || '{}'); } catch (e) { detail = {}; }
+        }
+        if (detail && typeof detail === 'object') {
+          for (const [k, v] of Object.entries(detail)) {
+            if (v === '' || v === null || v === undefined) continue;
+            push(DETAIL_LABELS[k] || APP_FIELDS[k] || k, v);
+          }
+        }
+        return rows.length ? rows : [{ label: '说明', value: '暂无明细' }];
+      }
+      const rows = [{ label: '操作对象', value: (info.asset_nos || []).join('、') }];
+      const payload = info.payload || {};
+      for (const [k, v] of Object.entries(payload)) {
+        if (v === '' || v === null || v === undefined) continue;
+        if (k === 'proof_photos' || typeof v === 'object') continue;
+        rows.push({ label: OP_PAYLOAD_LABELS[k] || k, value: v });
+      }
+      return rows;
+    }
+
+    async function loadApprovals() {
+      loading.value = true;
+      try {
+        const params = new URLSearchParams();
+        if (filter.status) params.append('status', filter.status);
+        if (filter.applyType) params.append('apply_type', filter.applyType);
+        params.append('page', page.value);
+        params.append('page_size', pageSize);
+        const r = await fetch(`${API}/approvals?${params}`, { headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('ams_token') || '') } }).then(r => r.json());
+        tableData.value = (r.data || []).map(d => ({ ...d, status: d.status || '待审批' }));
+        total.value = r.total || 0;
+      } catch (e) {
+        ElementPlus.ElMessage.error('加载失败：' + e.message);
+      } finally {
+        loading.value = false;
+      }
+    }
+
+    async function loadFulfillable() {
+      fulfillLoading.value = true;
+      try {
+        const r = await fetch(`${API}/approvals/fulfillable`, {
+          headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('ams_token') || '') }
+        }).then(r => r.json());
+        fulfillData.value = r.data || [];
+        fulfillTotal.value = r.total || fulfillData.value.length;
+      } catch (e) {
+        ElementPlus.ElMessage.error('加载待发放失败：' + e.message);
+      } finally {
+        fulfillLoading.value = false;
+      }
+    }
+
+    async function createPoFromApp(row) {
+      if (!row || !row.id) return;
+      if (row.po_order_no) {
+        ElementPlus.ElMessage.info('已关联采购订单：' + row.po_order_no);
+        return;
+      }
+      row._creatingPo = true;
+      try {
+        const r = await fetch(`${API}/approvals/${row.id}/create-order`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + (localStorage.getItem('ams_token') || '')
+          },
+          body: '{}'
+        });
+        const d = await r.json();
+        if (!r.ok || !d.success) {
+          ElementPlus.ElMessage.error(d.error || '生成失败');
+          if (d.order_no) { row.po_order_no = d.order_no; row.po_id = d.order_id; }
+          return;
+        }
+        row.po_order_no = d.order_no;
+        row.po_id = d.order_id;
+        ElementPlus.ElMessage.success('已生成：' + d.order_no);
+      } catch (e) {
+        ElementPlus.ElMessage.error('生成失败');
+      } finally {
+        row._creatingPo = false;
+      }
+    }
+
+    function onTabChange(name) {
+      if (name === 'fulfill') loadFulfillable();
+      else loadApprovals();
+    }
+
+    async function openFulfill(row) {
+      fulfillDlg.row = row;
+      fulfillDlg.assetId = null;
+      try {
+        const r = await fetch(`${API}/assets?status=${encodeURIComponent('在库')}&page_size=200&scope=all`, {
+          headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('ams_token') || '') }
+        }).then(r => r.json());
+        stockAssets.value = r.data || [];
+      } catch (e) {
+        stockAssets.value = [];
+      }
+      fulfillDlg.visible = true;
+    }
+
+    async function submitFulfill() {
+      if (!fulfillDlg.assetId) {
+        ElementPlus.ElMessage.warning('请选择在库资产');
+        return;
+      }
+      const r = await fetch(`${API}/approvals/${fulfillDlg.row.id}/fulfill`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('ams_token') || '') },
+        body: JSON.stringify({ asset_id: fulfillDlg.assetId })
+      });
+      const d = await r.json();
+      if (!r.ok || !d.success) {
+        ElementPlus.ElMessage.error(d.error || '发放失败');
+        return;
+      }
+      ElementPlus.ElMessage.success('已发放：' + (d.asset_no || ''));
+      fulfillDlg.visible = false;
+      loadFulfillable();
+    }
+
+    function openDialog(row, action) {
+      dialog.row = row;
+      dialog.action = action;
+      dialog.approver = '';
+      dialog.note = '';
+      dialog.visible = true;
+    }
+
+    async function submitApprove() {
+      const row = dialog.row;
+      const r = await fetch(`${API}/approvals/${row.id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('ams_token') || '') },
+        body: JSON.stringify({
+          apply_type: row.apply_type,
+          status: dialog.action === 'approve' ? '已通过' : '已拒绝',
+          approver: dialog.approver || '超管',
+          remark: dialog.note
+        })
+      });
+      const d = await r.json();
+      if (!r.ok || !d.success) {
+        ElementPlus.ElMessage.error(d.error || '审批失败');
+        return;
+      }
+      ElementPlus.ElMessage.success(dialog.action === 'approve' ? '已通过' : '已拒绝');
+      dialog.visible = false;
+      loadApprovals();
+      loadFulfillable();
+    }
+
+    loadApprovals();
+    loadFulfillable();
+    return { allTypes, filter, tableData, loading, total, page, pageSize, dialog,
+      activeTab, fulfillData, fulfillLoading, fulfillTotal, stockAssets, fulfillDlg,
+      statusType, typeTag, detailRows, loadApprovals, openDialog, submitApprove,
+      loadFulfillable, createPoFromApp, onTabChange, openFulfill, submitFulfill };
+  }
+}).use(ElementPlus, { locale: ElementPlusLocaleZhCn }).mount('#app');
+</script>
+</body>
+</html>

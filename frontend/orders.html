@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<script src="./ams-role.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>采购订单 - 企业资产管理系统</title>
+<link rel="stylesheet" href="./lib/element-plus.index.css">
+<script src="./lib/vue.global.prod.js"></script>
+<script src="./lib/element-plus.index.full.min.js"></script>
+<script src="./lib/element-plus-zh-cn.min.js"></script>
+<script src="./ams-ep-zh.js"></script>
+<script src="./lib/element-plus-icons.iife.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;background:#f0f2f5}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:220px;height:100vh;max-height:100vh;overflow:hidden;background:#243038;position:fixed;left:0;top:0;z-index:100;box-shadow:2px 0 12px rgba(0,0,0,.15);display:flex;flex-direction:column}
+.sidebar-logo{padding:20px 16px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.logo-icon{width:36px;height:36px;background:#1a6b5c;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.logo-text{color:#fff;font-size:14px;font-weight:600;line-height:1.3}
+.logo-sub{color:rgba(255,255,255,.5);font-size:11px}
+.nav-menu{flex:1;min-height:0;padding:8px 0;overflow-y:auto}
+.nav-item,a.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:rgba(255,255,255,.65);cursor:pointer;font-size:13px;border-radius:0;transition:all .2s;margin:1px 8px;border-radius:8px;font-family:inherit;text-decoration:none}
+.nav-item:hover,a.nav-item:hover{color:#fff;background:rgba(255,255,255,.08)}
+.nav-item.active,a.nav-item.active{color:#fff;background:rgba(26,107,92,0.72)}
+.nav-icon{font-size:16px;width:18px;text-align:center}
+.nav-group-title{padding:12px 20px 4px;color:rgba(255,255,255,.3);font-size:11px;letter-spacing:1px;text-transform:uppercase}
+.main{margin-left:220px;min-height:100vh;display:flex;flex-direction:column}
+.topbar{height:56px;background:#fff;border-bottom:1px solid #e8e8e8;display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:50}
+.topbar-title{font-size:16px;font-weight:600;color:#1a1f35;flex:1}
+.content{padding:24px;flex:1}
+.card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:20px;overflow-x:auto;max-width:100%}
+.status-pending{color:#fa8c16;background:#fff7e6;border:1px solid #ffd591}
+.status-partial{color:#1677ff;background:#e6f4ff;border:1px solid #91caff}
+.status-done{color:#52c41a;background:#f6ffed;border:1px solid #b7eb8f}
+.status-cancel{color:#8c8c8c;background:#fafafa;border:1px solid #d9d9d9}
+.progress-wrap{display:flex;align-items:center;gap:8px}
+.progress-bar{flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden}
+.progress-inner{height:100%;border-radius:3px;background:#52c41a;transition:width .3s}
+.progress-text{font-size:12px;color:#8c8c8c;white-space:nowrap}
+.order-table{width:100%;border-collapse:collapse}
+.order-table thead tr{background:#f5f7fa;border-bottom:2px solid #e8e8e8}
+.order-table thead th{padding:12px 14px;font-size:13px;font-weight:600;color:#606266;text-align:left;white-space:nowrap;user-select:none}
+.order-table tbody tr{border-bottom:1px solid #f0f0f0;cursor:pointer;transition:background .15s}
+.order-table tbody tr:hover{background:#f5f7ff}
+.order-table tbody tr:last-child{border-bottom:none}
+.order-table td{padding:12px 14px;font-size:13px;color:#333;vertical-align:middle}
+.order-empty{padding:48px 0;text-align:center;color:#bfbfbf;font-size:14px}
+.order-empty-icon{font-size:40px;margin-bottom:12px}
+.detail-link{color:#1677ff;font-size:13px;cursor:pointer;background:none;border:none;padding:0;font-family:inherit}
+.detail-link:hover{color:#4096ff;text-decoration:underline}
+.stat-row{display:flex;gap:16px;margin-bottom:20px}
+.stat-card{flex:1;background:#f8f9fc;border-radius:8px;padding:14px 16px;text-align:center}
+.stat-value{font-size:22px;font-weight:700;color:#1a1f35}
+.stat-label{font-size:12px;color:#8c8c8c;margin-top:2px}
+.asset-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#e6f4ff;color:#1677ff;border:1px solid #91caff;margin:2px;cursor:pointer}
+.asset-tag:hover{background:#bae0ff}
+@media (max-width:768px){
+  html,body{overflow-x:hidden;max-width:100vw}
+  .sidebar{display:none!important}
+  .main{margin-left:0!important;width:100%!important}
+  .content{padding:12px}
+  .topbar{padding:0 12px}
+  .stat-row{flex-direction:column}
+  .el-dialog{width:calc(100vw - 24px)!important;max-width:calc(100vw - 24px)!important;margin:12px auto!important}
+}
+</style>
+<script src="./auth-guard.js"></script>
+</head>
+<body>
+<div id="app">
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">📦</div>
+        <div>
+          <div class="logo-text">资产管理系统</div>
+          <div class="logo-sub">Asset Management</div>
+        </div>
+      </div>
+      <nav class="nav-menu">
+        <div class="nav-group-title">概览</div>
+        <a href="index.html" class="nav-item"><span class="nav-icon">📊</span><span>仪表盘</span></a>
+        <div class="nav-group-title">快速操作</div>
+        <a href="stock.html" class="nav-item"><span class="nav-icon">📦</span><span>出入库</span></a>
+        <a href="repair.html" class="nav-item"><span class="nav-icon">🔧</span><span>报修</span></a>
+        <a href="dispose.html" class="nav-item"><span class="nav-icon">🗑️</span><span>资产处理</span></a>
+        <div class="nav-group-title">固定资产</div>
+        <a href="index.html" class="nav-item"><span class="nav-icon">🖥️</span><span>资产台账</span></a>
+        <a href="index.html" class="nav-item"><span class="nav-icon">📋</span><span>出入库记录</span></a>
+        <a href="index.html" class="nav-item"><span class="nav-icon">🔧</span><span>维修管理</span></a>
+        <a href="index.html" class="nav-item"><span class="nav-icon">🗑️</span><span>资产处理记录</span></a>
+        <div class="nav-group-title">耗材管理</div>
+        <a href="index.html" class="nav-item"><span class="nav-icon">🧪</span><span>耗材台账</span></a>
+        <a href="index.html" class="nav-item"><span class="nav-icon">📦</span><span>耗材领用记录</span></a>
+        <div class="nav-group-title">管理</div>
+        <a href="approval.html" class="nav-item"><span class="nav-icon">📋</span><span>审批中心</span></a>
+        <a href="inventory.html" class="nav-item"><span class="nav-icon">📦</span><span>资产盘点</span></a>
+        <div class="nav-group-title">采购</div>
+        <div class="nav-item active"><span class="nav-icon">🛒</span><span>采购订单</span></div>
+        <div class="nav-group-title">配置</div>
+        <a href="fields.html" class="nav-item"><span class="nav-icon">🔧</span><span>字段维护</span></a>
+        <a href="index.html" class="nav-item"><span class="nav-icon">👥</span><span>用户管理</span></a>
+        <a href="index.html" class="nav-item"><span class="nav-icon">🔔</span><span>飞书通知</span></a>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-title">采购订单</div>
+        <el-button type="primary" :icon="Plus" @click="openCreate">新建订单</el-button>
+      </div>
+      <div class="content">
+        <div class="card" style="padding:16px 20px">
+          <el-row :gutter="12" align="middle">
+            <el-col :span="10">
+              <el-input v-model="filter.keyword" placeholder="搜索订单号、标题、供应商" clearable @clear="load" @keyup.enter="load">
+                <template #prefix><el-icon><Search /></el-icon></template>
+              </el-input>
+            </el-col>
+            <el-col :span="5">
+              <el-select v-model="filter.status" placeholder="全部状态" clearable @change="load" style="width:100%">
+                <el-option label="待到货" value="待到货">
+                  <span style="display:flex;align-items:center;gap:8px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#faad14;flex-shrink:0"></span>待到货
+                  </span>
+                </el-option>
+                <el-option label="部分到货" value="部分到货">
+                  <span style="display:flex;align-items:center;gap:8px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#1677ff;flex-shrink:0"></span>部分到货
+                  </span>
+                </el-option>
+                <el-option label="已到货" value="已到货">
+                  <span style="display:flex;align-items:center;gap:8px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#52c41a;flex-shrink:0"></span>已到货
+                  </span>
+                </el-option>
+                <el-option label="已取消" value="已取消">
+                  <span style="display:flex;align-items:center;gap:8px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#8c8c8c;flex-shrink:0"></span>已取消
+                  </span>
+                </el-option>
+              </el-select>
+            </el-col>
+            <el-col :span="3">
+              <el-button :icon="Refresh" @click="load">刷新</el-button>
+            </el-col>
+          </el-row>
+        </div>
+
+        <div class="card" style="padding:0">
+          <div v-loading="loading" style="min-height:200px">
+            <table class="order-table">
+              <thead>
+                <tr>
+                  <th style="width:170px">订单编号</th>
+                  <th>标题</th>
+                  <th style="width:120px">供应商</th>
+                  <th style="width:100px">下单日期</th>
+                  <th style="width:90px">状态</th>
+                  <th style="width:120px">到货进度</th>
+                  <th style="width:100px;text-align:right">金额</th>
+                  <th style="width:80px">采购人</th>
+                  <th style="width:70px;text-align:center">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="orders.length === 0 && !loading">
+                  <td colspan="9">
+                    <div class="order-empty">
+                      <div class="order-empty-icon">🛒</div>
+                      <div>暂无采购订单</div>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-for="row in orders" :key="row.id" @click="openDetail(row)">
+                  <td style="font-family:'SF Mono',Consolas,monospace;font-weight:600">{{ row.order_no }}</td>
+                  <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px" :title="row.title">{{ row.title }}</td>
+                  <td>{{ row.supplier || '-' }}</td>
+                  <td style="color:#8c8c8c;font-size:12px">{{ row.order_date || '-' }}</td>
+                  <td><el-tag :class="statusClass(row.status)" size="small">{{ row.status }}</el-tag></td>
+                  <td>
+                    <div class="progress-wrap">
+                      <div class="progress-bar">
+                        <div class="progress-inner" :style="{width: progressPct(row) + '%'}"></div>
+                      </div>
+                      <span class="progress-text">{{ row.arrived_qty || 0 }}/{{ row.total_qty || 0 }}</span>
+                    </div>
+                  </td>
+                  <td style="text-align:right;font-weight:600">{{ row.total_amount ? '¥' + Number(row.total_amount).toLocaleString() : '-' }}</td>
+                  <td>{{ row.purchase_by || '-' }}</td>
+                  <td style="text-align:center"><button class="detail-link" @click.stop="openDetail(row)">详情</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="padding:14px 20px;display:flex;justify-content:flex-end">
+            <el-pagination
+              v-model:current-page="page"
+              v-model:page-size="pageSize"
+              :total="total"
+              layout="total, prev, pager, next"
+              @current-change="load">
+            </el-pagination>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新建订单对话框 -->
+  <el-dialog v-model="createDlg" title="新建采购订单" width="750px" destroy-on-close>
+    <el-form :model="form" :rules="formRules" ref="formRef" label-width="100px">
+      <el-row :gutter="16">
+        <el-col :span="24">
+          <el-form-item label="订单标题" prop="title">
+            <el-input v-model="form.title" placeholder="如：2026年Q2 MacBook采购"></el-input>
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row :gutter="16">
+        <el-col :span="12">
+          <el-form-item label="供应商">
+            <el-input v-model="form.supplier" placeholder="供应商名称"></el-input>
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="采购人">
+            <el-input v-model="form.purchase_by" placeholder="采购负责人"></el-input>
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row :gutter="16">
+        <el-col :span="12">
+          <el-form-item label="下单日期">
+            <el-date-picker v-model="form.order_date" type="date" value-format="YYYY-MM-DD" style="width:100%"></el-date-picker>
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="预计到货">
+            <el-date-picker v-model="form.expected_date" type="date" value-format="YYYY-MM-DD" style="width:100%"></el-date-picker>
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row :gutter="16">
+        <el-col :span="8">
+          <el-form-item label="发票号">
+            <el-input v-model="form.invoice_no" placeholder="发票号码"></el-input>
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
+          <el-form-item label="合同号">
+            <el-input v-model="form.contract_no" placeholder="合同编号"></el-input>
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
+          <el-form-item label="费控单号">
+            <el-input v-model="form.expense_order_no" placeholder="费控系统单号"></el-input>
+          </el-form-item>
+        </el-col>
+      </el-row>
+      <el-row :gutter="16">
+        <el-col :span="24">
+          <el-form-item label="备注">
+            <el-input v-model="form.notes" type="textarea" :rows="2" placeholder="其他备注信息"></el-input>
+          </el-form-item>
+        </el-col>
+      </el-row>
+
+      <!-- 订单明细 -->
+      <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-weight:600;font-size:14px">订单明细</span>
+        <el-button size="small" :icon="Plus" @click="addItem">添加明细</el-button>
+      </div>
+      <el-table :data="form.items" border size="small" style="margin-bottom:8px">
+        <el-table-column label="类型" width="100">
+          <template #default="{ row }">
+            <el-select v-model="row.item_type" size="small" style="width:100%">
+              <el-option label="固定资产" value="asset">
+                <span style="display:flex;align-items:center;gap:6px">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#1677ff;flex-shrink:0"></span>固定资产
+                </span>
+              </el-option>
+              <el-option label="耗材" value="consumable">
+                <span style="display:flex;align-items:center;gap:6px">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#fa8c16;flex-shrink:0"></span>耗材
+                </span>
+              </el-option>
+            </el-select>
+          </template>
+        </el-table-column>
+        <el-table-column label="品名" min-width="140">
+          <template #default="{ row }">
+            <el-input v-model="row.item_name" size="small" placeholder="品名/名称"></el-input>
+          </template>
+        </el-table-column>
+        <el-table-column label="品牌" width="100">
+          <template #default="{ row }">
+            <el-input v-model="row.brand" size="small" placeholder="品牌"></el-input>
+          </template>
+        </el-table-column>
+        <el-table-column label="型号" width="110">
+          <template #default="{ row }">
+            <el-input v-model="row.model" size="small" placeholder="型号"></el-input>
+          </template>
+        </el-table-column>
+        <el-table-column label="数量" width="80">
+          <template #default="{ row }">
+            <el-input-number v-model="row.quantity" :min="1" size="small" controls-position="right" style="width:100%"></el-input-number>
+          </template>
+        </el-table-column>
+        <el-table-column label="单价(¥)" width="100">
+          <template #default="{ row }">
+            <el-input-number v-model="row.unit_price" :min="0" :precision="2" size="small" controls-position="right" style="width:100%"></el-input-number>
+          </template>
+        </el-table-column>
+        <el-table-column width="50" fixed="right">
+          <template #default="{ $index }">
+            <el-button link type="danger" size="small" :icon="Delete" @click="removeItem($index)"></el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div style="text-align:right;font-size:13px;color:#666">
+        合计金额：<strong style="color:#1a1f35;font-size:16px">¥{{ totalAmount }}</strong>
+      </div>
+    </el-form>
+    <template #footer>
+      <el-button @click="createDlg = false">取消</el-button>
+      <el-button type="primary" :loading="saving" @click="saveOrder">创建订单</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- 订单详情抽屉 -->
+  <el-drawer v-model="detailDrw" :title="detail.order_no || '订单详情'" size="700px" destroy-on-close>
+    <template v-if="detail.id">
+      <!-- 状态 & 操作 -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+        <el-tag :class="statusClass(detail.status)" size="large">{{ detail.status }}</el-tag>
+        <el-button v-if="detail.status !== '已到货' && detail.status !== '已取消'" type="success" @click="openArriveConfirm">
+          <el-icon style="margin-right:5px"><Check /></el-icon>确认到货
+        </el-button>
+        <el-button v-if="detail.status !== '已到货' && detail.status !== '已取消'" type="danger" plain @click="cancelOrder">
+          <el-icon style="margin-right:5px"><Close /></el-icon>取消订单
+        </el-button>
+      </div>
+
+      <!-- 统计 -->
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-value">{{ detail.items ? detail.items.length : 0 }}</div>
+          <div class="stat-label">明细条数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ totalDetailQty }}</div>
+          <div class="stat-label">采购总数量</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" style="color:#52c41a">{{ totalArrivedQty }}</div>
+          <div class="stat-label">已到货数量</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ detail.total_amount ? '¥' + Number(detail.total_amount).toLocaleString() : '-' }}</div>
+          <div class="stat-label">订单金额</div>
+        </div>
+      </div>
+
+      <!-- 基本信息 -->
+      <el-descriptions :column="2" border size="small" style="margin-bottom:20px">
+        <el-descriptions-item label="供应商">{{ detail.supplier || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="采购人">{{ detail.purchase_by || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="下单日期">{{ detail.order_date || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="预计到货">{{ detail.expected_date || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="实际到货">{{ detail.actual_date || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="发票号">{{ detail.invoice_no || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="合同号">{{ detail.contract_no || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="费控单号">{{ detail.expense_order_no || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="备注" :span="2">{{ detail.notes || '-' }}</el-descriptions-item>
+      </el-descriptions>
+
+      <!-- 订单明细 -->
+      <div style="font-weight:600;margin-bottom:12px">📋 订单明细</div>
+      <table class="order-table" style="border:1px solid #f0f0f0;margin-bottom:20px">
+        <thead>
+          <tr><th>品名</th><th style="width:80px">品牌</th><th style="width:100px">型号</th><th style="width:70px">类型</th><th style="width:90px;text-align:center">进度</th><th style="width:90px;text-align:right">单价</th></tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in detail.items" :key="item.id">
+            <td>{{ item.item_name }}</td>
+            <td>{{ item.brand || '-' }}</td>
+            <td>{{ item.model || '-' }}</td>
+            <td><el-tag size="small" :type="item.item_type === 'asset' ? '' : 'warning'">{{ item.item_type === 'asset' ? '资产' : '耗材' }}</el-tag></td>
+            <td style="text-align:center">{{ item.arrived_qty || 0 }}/{{ item.quantity }}</td>
+            <td style="text-align:right">{{ item.unit_price ? '¥' + item.unit_price : '-' }}</td>
+          </tr>
+          <tr v-if="!detail.items || detail.items.length === 0">
+            <td colspan="6" style="text-align:center;color:#bfbfbf;padding:24px">暂无明细</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- 关联资产 -->
+      <div v-if="detail.assets && detail.assets.length">
+        <div style="font-weight:600;margin-bottom:10px">💻 关联资产（{{ detail.assets.length }} 件）</div>
+        <div style="margin-bottom:20px">
+          <a v-for="a in detail.assets" :key="a.id" :href="'index.html?asset=' + a.id" class="asset-tag">{{ a.asset_no }}</a>
+        </div>
+      </div>
+
+      <!-- 关联耗材 -->
+      <div v-if="detail.consumables && detail.consumables.length">
+        <div style="font-weight:600;margin-bottom:10px">🧪 关联耗材（{{ detail.consumables.length }} 种）</div>
+        <table class="order-table" style="border:1px solid #f0f0f0">
+          <thead><tr><th style="width:120px">编号</th><th>名称</th><th style="width:90px;text-align:right">当前库存</th></tr></thead>
+          <tbody>
+            <tr v-for="c in detail.consumables" :key="c.id">
+              <td>{{ c.item_no }}</td>
+              <td>{{ c.name }}</td>
+              <td style="text-align:right">{{ c.quantity }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </template>
+    <div v-else style="text-align:center;padding:40px;color:#bfbfbf">加载中...</div>
+  </el-drawer>
+</div>
+
+<script>
+var Vue, ElementPlus, ElementPlusIconsVue;
+const { createApp, ref, reactive, computed, onMounted } = Vue;
+const { ElMessage, ElMessageBox } = ElementPlus;
+const { Plus, Search, Refresh, Delete, Check, Close } = ElementPlusIconsVue;
+const API = '/api';
+
+createApp({
+  setup() {
+    const orders = ref([]);
+    const total = ref(0);
+    const page = ref(1);
+    const pageSize = ref(20);
+    const loading = ref(false);
+    const filter = reactive({ keyword: '', status: '' });
+    const createDlg = ref(false);
+    const saving = ref(false);
+    const formRef = ref(null);
+    const detailDrw = ref(false);
+    const detail = ref({});
+
+    const form = reactive({
+      title: '',
+      supplier: '',
+      purchase_by: '',
+      order_date: '',
+      expected_date: '',
+      invoice_no: '',
+      contract_no: '',
+      expense_order_no: '',
+      notes: '',
+      items: []
+    });
+
+    const formRules = {
+      title: [{ required: true, message: '请输入订单标题', trigger: 'blur' }]
+    };
+
+    const totalAmount = computed(() => {
+      return form.items.reduce((sum, item) => {
+        return sum + (item.unit_price || 0) * (item.quantity || 0);
+      }, 0);
+    });
+
+    const totalDetailQty = computed(() => {
+      return (detail.value.items || []).reduce((s, i) => s + (i.quantity || 0), 0);
+    });
+
+    const totalArrivedQty = computed(() => {
+      return (detail.value.items || []).reduce((s, i) => s + (i.arrived_qty || 0), 0);
+    });
+
+    function statusClass(s) {
+      if (s === '待到货') return 'status-pending';
+      if (s === '部分到货') return 'status-partial';
+      if (s === '已到货') return 'status-done';
+      return 'status-cancel';
+    }
+
+    function progressPct(row) {
+      if (!row.total_qty || row.total_qty === 0) return 0;
+      return Math.round((row.arrived_qty || 0) / row.total_qty * 100);
+    }
+
+    function authHeaders() {
+      const token = localStorage.getItem('ams_token');
+      return token ? { 'Authorization': 'Bearer ' + token } : {};
+    }
+
+    async function load() {
+      loading.value = true;
+      try {
+        const params = new URLSearchParams({
+          page: page.value,
+          page_size: pageSize.value,
+          keyword: filter.keyword,
+          status: filter.status
+        });
+        const r = await fetch(API + '/orders?' + params, { headers: authHeaders() });
+        const d = await r.json();
+        if (d.success) {
+          orders.value = d.data;
+          total.value = d.total;
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        loading.value = false;
+      }
+    }
+
+    function openCreate() {
+      form.title = '';
+      form.supplier = '';
+      form.purchase_by = '';
+      form.order_date = '';
+      form.expected_date = '';
+      form.invoice_no = '';
+      form.contract_no = '';
+      form.expense_order_no = '';
+      form.notes = '';
+      form.items = [{ item_type: 'asset', item_name: '', brand: '', model: '', quantity: 1, unit_price: 0 }];
+      createDlg.value = true;
+    }
+
+    function addItem() {
+      form.items.push({ item_type: 'asset', item_name: '', brand: '', model: '', quantity: 1, unit_price: 0 });
+    }
+
+    function removeItem(index) {
+      form.items.splice(index, 1);
+    }
+
+    async function saveOrder() {
+      if (!form.title) {
+        ElMessage.warning('请输入订单标题');
+        return;
+      }
+      const validItems = form.items.filter(i => i.item_name);
+      if (validItems.length === 0) {
+        ElMessage.warning('请至少添加一条明细');
+        return;
+      }
+      saving.value = true;
+      try {
+        const payload = { ...form, items: validItems };
+        const r = await fetch(API + '/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify(payload)
+        });
+        const d = await r.json();
+        if (d.success) {
+          ElMessage.success('订单创建成功');
+          createDlg.value = false;
+          load();
+        } else {
+          ElMessage.error(d.error || '创建失败');
+        }
+      } catch (e) {
+        ElMessage.error('创建失败');
+      } finally {
+        saving.value = false;
+      }
+    }
+
+    async function openDetail(row) {
+      detailDrw.value = true;
+      detail.value = {};
+      try {
+        const r = await fetch(API + '/orders/' + row.id, { headers: authHeaders() });
+        const d = await r.json();
+        if (d.success) {
+          detail.value = d.data;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function openArriveConfirm() {
+      try {
+        await ElMessageBox.confirm(
+          '确认订单已到货？系统将自动创建入库记录。\n\n资产将自动入库，耗材库存将自动增加。',
+          '确认到货',
+          { confirmButtonText: '确认到货', cancelButtonText: '取消', type: 'success' }
+        );
+        const r = await fetch(API + '/orders/' + detail.value.id + '/arrive', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({ operator: detail.value.purchase_by || '系统' })
+        });
+        const d = await r.json();
+        if (d.success) {
+          ElMessage.success(d.message || '确认到货成功');
+          detailDrw.value = false;
+          load();
+        } else {
+          ElMessage.error(d.error || '确认到货失败');
+        }
+      } catch (e) {
+        // 用户取消
+      }
+    }
+
+    async function cancelOrder() {
+      try {
+        await ElMessageBox.confirm('取消订单后无法恢复，确定要取消吗？', '取消订单', { type: 'warning' });
+        const r = await fetch(API + '/orders/' + detail.value.id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({ status: '已取消' })
+        });
+        const d = await r.json();
+        if (d.success) {
+          ElMessage.success('订单已取消');
+          detailDrw.value = false;
+          load();
+        } else {
+          ElMessage.error(d.error || '取消失败');
+        }
+      } catch (e) {
+        // 用户取消
+      }
+    }
+
+    onMounted(() => {
+      load();
+    });
+
+    return {
+      orders, total, page, pageSize, loading, filter, load,
+      statusClass, progressPct, createDlg, saving, formRef, form, formRules,
+      totalAmount, openCreate, addItem, removeItem, saveOrder,
+      detailDrw, detail, openDetail, totalDetailQty, totalArrivedQty,
+      openArriveConfirm, cancelOrder,
+      Plus, Search, Refresh, Delete, Check, Close
+    };
+  }
+}).use(ElementPlus, { locale: ElementPlusLocaleZhCn }).use(ElementPlusIconsVue).mount('#app');
+</script>
+</body>
+</html>

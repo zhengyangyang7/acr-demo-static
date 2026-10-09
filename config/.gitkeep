@@ -1,0 +1,1 @@
+# 运行时配置目录（docker-compose 挂载 ./config -> /app/config）

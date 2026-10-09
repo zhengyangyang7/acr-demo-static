@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<script src="./ams-role.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>个人中心 - 企业资产管理系统</title>
+<link rel="stylesheet" href="./lib/element-plus.index.css">
+<script src="./lib/vue.global.prod.js"></script>
+<script src="./lib/element-plus.index.full.min.js"></script>
+<script src="./lib/element-plus-zh-cn.min.js"></script>
+<script src="./ams-ep-zh.js"></script>
+<style>
+* { box-sizing: border-box; }
+body { 
+  margin: 0; 
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; 
+  background: #f0f2f5; 
+}
+
+.app-layout { display: flex; min-height: 100vh; }
+
+/* 侧边栏 */
+.sidebar {
+  width: 220px; height: 100vh; max-height: 100vh; background: #243038;
+  display: flex; flex-direction: column; position: fixed; left: 0; top: 0; z-index: 100;
+  box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+.sidebar-logo {
+  padding: 20px 16px 16px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-logo .logo-icon { width: 36px; height: 36px; background: #1a6b5c; border-radius: 8px;
+  display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.sidebar-logo .logo-text { color:#fff; font-size:14px; font-weight:600; line-height:1.3;}
+.nav-menu { flex:1; min-height: 0; padding: 8px 0; overflow-y: auto; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 20px;
+  color: rgba(255,255,255,0.65); cursor: pointer; font-size:13px;
+  border-radius: 0; transition: all 0.2s; margin: 1px 8px; border-radius: 8px;
+  font-family: inherit; text-decoration: none;
+}
+.nav-item:hover { color:#fff; background:rgba(255,255,255,0.08); }
+.nav-item.active { color:#fff; background: rgba(26,107,92,0.72); }
+.nav-item .nav-icon { font-size: 16px; width:18px; text-align:center; }
+
+/* 主内容 */
+.main-content { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+.topbar {
+  height: 56px; background: #fff; display: flex; align-items: center;
+  padding: 0 24px; border-bottom: 1px solid #e8e8e8;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06); position: sticky; top:0; z-index:50;
+}
+.topbar-title { font-size: 16px; font-weight: 600; color: #1a1f35; flex:1; }
+.topbar-right { display:flex;align-items:center;gap:12px; }
+
+/* 用户头像 */
+.user-avatar-dropdown { cursor: pointer; }
+.user-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: #1a6b5c;
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600;
+  box-shadow: 0 2px 8px rgba(26,107,92,0.28);
+}
+.user-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+
+.page-content { padding: 20px 24px; flex:1; }
+
+/* 用户资料卡片 */
+.profile-header {
+  background: #1a6b5c;
+  border-radius: 16px;
+  padding: 32px;
+  color: #fff;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.profile-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  font-weight: 600;
+  border: 4px solid rgba(255,255,255,0.3);
+  flex-shrink: 0;
+}
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.profile-info { flex: 1; }
+.profile-name {
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.profile-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+  opacity: 0.9;
+}
+.profile-meta span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.profile-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* 统计卡片 */
+.stat-cards { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+  gap: 16px; 
+  margin-bottom: 24px; 
+}
+.stat-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.stat-card:hover { 
+  transform: translateY(-2px); 
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1); 
+}
+.stat-card .label { 
+  font-size: 13px; 
+  color: #8c8c8c; 
+  margin-bottom: 8px; 
+}
+.stat-card .value { 
+  font-size: 32px; 
+  font-weight: 700; 
+  color: #1a1f35;
+}
+.stat-card.primary .value { color: #1a6b5c; }
+.stat-card.success .value { color: #52c41a; }
+.stat-card.warning .value { color: #fa8c16; }
+.stat-card.danger .value { color: #ff4d4f; }
+
+/* 内容卡片 */
+.content-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  margin-bottom: 20px;
+}
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1f35;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-body { padding: 0; }
+
+/* 表格样式 */
+.plain-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+.plain-table thead {
+  background: #fafafa;
+}
+.plain-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #f0f0f0;
+}
+.plain-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #333;
+}
+.plain-table tbody tr:hover {
+  background: #f5f7fa;
+}
+
+/* 快捷操作 */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+  padding: 20px;
+}
+.quick-action-item {
+  background: #f6f8fc;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+.quick-action-item:hover {
+  background: #fff;
+  border-color: #1a6b5c;
+  transform: translateY(-2px);
+}
+.quick-action-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin: 0 auto 12px;
+}
+.quick-action-item.primary .quick-action-icon { background: rgba(26,107,92,0.1); }
+.quick-action-item.success .quick-action-icon { background: rgba(82,196,26,0.1); }
+.quick-action-item.warning .quick-action-icon { background: rgba(250,140,22,0.1); }
+.quick-action-item.danger .quick-action-icon { background: rgba(255,77,79,0.1); }
+.quick-action-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1f35;
+}
+
+/* 待办事项 */
+.todo-list {
+  padding: 0;
+}
+.todo-item {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.todo-item:hover {
+  background: #f5f7fa;
+}
+.todo-item:last-child {
+  border-bottom: none;
+}
+.todo-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+.todo-icon.approval { background: rgba(250,140,22,0.1); }
+.todo-icon.inventory { background: rgba(26,107,92,0.1); }
+.todo-icon.repair { background: rgba(255,77,79,0.1); }
+.todo-content { flex: 1; }
+.todo-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1f35;
+  margin-bottom: 4px;
+}
+.todo-desc {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+.todo-badge {
+  background: #ff4d4f;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+}
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+.empty-text {
+  font-size: 14px;
+  color: #8c8c8c;
+}
+
+/* 两栏布局 */
+.two-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 1200px) {
+  .two-column {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 900px) {
+  html, body { overflow-x: hidden; max-width: 100vw; }
+  .sidebar { display: none !important; }
+  .main-content { margin-left: 0 !important; width: 100% !important; }
+  .page-content { padding: 12px; }
+  .profile-header { flex-direction: column; align-items: flex-start; padding: 20px; gap: 16px; }
+  .profile-name { font-size: 22px; }
+  .profile-meta { flex-wrap: wrap; }
+  .profile-actions { width: 100%; flex-wrap: wrap; }
+  .el-dialog { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; margin: 12px auto !important; }
+}
+
+/* 认证遮罩层 */
+.auth-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #1a6b5c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.auth-loading {
+  text-align: center;
+  color: #fff;
+}
+.auth-loading .el-icon {
+  margin-bottom: 16px;
+}
+.auth-loading p {
+  font-size: 14px;
+  opacity: 0.9;
+}
+.auth-error {
+  background: #fff;
+  border-radius: 16px;
+  padding: 48px;
+  text-align: center;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.auth-error .error-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+.auth-error h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1f35;
+  margin: 0 0 12px;
+}
+.auth-error p {
+  font-size: 14px;
+  color: #8c8c8c;
+  margin: 0 0 8px;
+}
+</style>
+</head>
+<body>
+<div id="app" class="app-layout">
+  <!-- 认证加载中 -->
+  <div v-if="authLoading" class="auth-overlay">
+    <div class="auth-loading">
+      <el-icon class="is-loading" :size="40"><Loading /></el-icon>
+      <p>正在验证登录状态...</p>
+    </div>
+  </div>
+  
+  <!-- 未登录 -->
+  <div v-else-if="!isLoggedIn" class="auth-overlay">
+    <div class="auth-error">
+      <div class="error-icon">🔒</div>
+      <h3>请先登录</h3>
+      <p>您需要登录后才能访问个人中心</p>
+      <el-button type="primary" @click="goToLogin" style="margin-top: 16px;">去登录</el-button>
+    </div>
+  </div>
+
+  <template v-else>
+  <!-- 侧边栏 -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">📦</div>
+      <div class="logo-text">资产管理<br><span style="font-size:11px;opacity:0.6">个人中心</span></div>
+    </div>
+    <nav class="nav-menu">
+      <div class="nav-item active">
+        <span class="nav-icon">👤</span><span>我的主页</span>
+      </div>
+      <div class="nav-item" @click="goToIndex">
+        <span class="nav-icon">📊</span><span>返回系统</span>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- 主内容 -->
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-title">个人中心</div>
+      <div class="topbar-right">
+        <el-tag v-if="currentUser.source === 'lark'" type="success" size="small">🚀 Lark</el-tag>
+        <el-tag :type="getRoleTagType(currentUser.role)" size="small">{{ currentUser.role }}</el-tag>
+        <div class="user-avatar-dropdown" @click="handleLogout">
+          <div class="user-avatar" v-if="!currentUser.avatar">
+            {{ currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U' }}
+          </div>
+          <div class="user-avatar" v-else>
+            <img :src="currentUser.avatar" alt="avatar">
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="page-content">
+      <!-- 用户资料头 -->
+      <div class="profile-header">
+        <div class="profile-avatar" v-if="!currentUser.avatar">
+          {{ currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U' }}
+        </div>
+        <div class="profile-avatar" v-else>
+          <img :src="currentUser.avatar" alt="avatar">
+        </div>
+        <div class="profile-info">
+          <div class="profile-name">{{ currentUser.name }}</div>
+          <div class="profile-meta">
+            <span>🏢 {{ currentUser.department || '未设置部门' }}</span>
+            <span>📧 {{ currentUser.email || '未设置邮箱' }}</span>
+            <span>💼 {{ currentUser.role }}</span>
+          </div>
+        </div>
+        <div class="profile-actions">
+          <el-button type="primary" plain @click="showEditProfile">编辑资料</el-button>
+          <el-button @click="showChangePassword">修改密码</el-button>
+        </div>
+      </div>
+
+      <!-- 统计卡片 -->
+      <div class="stat-cards">
+        <div class="stat-card primary" @click="activeTab = 'assets'">
+          <div class="label">我的资产</div>
+          <div class="value">{{ stats.myAssets || 0 }}</div>
+        </div>
+        <div class="stat-card success" @click="activeTab = 'consumables'">
+          <div class="label">领用耗材</div>
+          <div class="value">{{ stats.myConsumables || 0 }}</div>
+        </div>
+        <div class="stat-card warning" @click="activeTab = 'todos'">
+          <div class="label">待办事项</div>
+          <div class="value">{{ stats.todos || 0 }}</div>
+        </div>
+        <div class="stat-card danger" style="cursor:pointer" @click="openRepairingList()">
+          <div class="label">维修中</div>
+          <div class="value">{{ stats.repairing || 0 }}</div>
+        </div>
+      </div>
+
+      <!-- 快捷操作 -->
+      <div class="content-card">
+        <div class="card-header">
+          <div class="card-title">⚡ 快捷申请</div>
+        </div>
+        <div class="quick-actions">
+          <div class="quick-action-item primary" @click="showApplyAsset">
+            <div class="quick-action-icon">💻</div>
+            <div class="quick-action-label">申请资产</div>
+          </div>
+          <div class="quick-action-item success" @click="showApplyConsumable">
+            <div class="quick-action-icon">🧪</div>
+            <div class="quick-action-label">领用耗材</div>
+          </div>
+          <div class="quick-action-item warning" @click="showApplyRepair">
+            <div class="quick-action-icon">🔧</div>
+            <div class="quick-action-label">报修申请</div>
+          </div>
+          <div class="quick-action-item danger" @click="showReturnAsset">
+            <div class="quick-action-icon">↩️</div>
+            <div class="quick-action-label">归还资产</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-column">
+        <!-- 我的资产 -->
+        <div class="content-card">
+          <div class="card-header">
+            <div class="card-title">🖥️ 我的资产</div>
+            <el-button type="primary" link @click="activeTab = 'assets'">查看全部</el-button>
+          </div>
+          <div class="card-body">
+            <div v-if="myAssets.length === 0" class="empty-state">
+              <div class="empty-icon">📭</div>
+              <div class="empty-text">暂无名下资产</div>
+            </div>
+            <table v-else class="plain-table">
+              <thead>
+                <tr>
+                  <th>资产编号</th>
+                  <th>设备</th>
+                  <th>状态</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in myAssets.slice(0, 5)" :key="item.id" @click="viewAssetDetail(item)" style="cursor: pointer;">
+                  <td>{{ item.asset_no }}</td>
+                  <td>{{ getAssetTypeName(item.category) }} {{ item.brand }}</td>
+                  <td><el-tag :type="getStatusType(item.status)" size="small">{{ item.status }}</el-tag></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 待办事项 -->
+        <div class="content-card">
+          <div class="card-header">
+            <div class="card-title">📋 待办事项</div>
+            <el-button type="primary" link @click="activeTab = 'todos'">查看全部</el-button>
+          </div>
+          <div class="card-body">
+            <div v-if="todoList.length === 0" class="empty-state">
+              <div class="empty-icon">✅</div>
+              <div class="empty-text">暂无待办事项</div>
+            </div>
+            <div v-else class="todo-list">
+              <div v-for="item in todoList.slice(0, 5)" :key="item.id" class="todo-item" @click="handleTodo(item)">
+                <div class="todo-icon" :class="item.type">
+                  {{ item.icon }}
+                </div>
+                <div class="todo-content">
+                  <div class="todo-title">{{ item.title }}</div>
+                  <div class="todo-desc">{{ item.desc }}</div>
+                </div>
+                <div v-if="item.count" class="todo-badge">{{ item.count }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 耗材领用记录 -->
+      <div class="content-card">
+        <div class="card-header">
+          <div class="card-title">🧪 耗材领用记录</div>
+          <el-button type="primary" link @click="activeTab = 'consumables'">查看全部</el-button>
+        </div>
+        <div class="card-body">
+          <div v-if="myConsumables.length === 0" class="empty-state">
+            <div class="empty-icon">📭</div>
+            <div class="empty-text">暂无耗材领用记录</div>
+          </div>
+          <table v-else class="plain-table">
+            <thead>
+              <tr>
+                <th>耗材名称</th>
+                <th>类目</th>
+                <th>领用数量</th>
+                <th>领用时间</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in myConsumables.slice(0, 5)" :key="item.id">
+                <td>{{ item.name }}</td>
+                <td>{{ item.category }}</td>
+                <td>{{ item.total_out }} {{ item.unit }}</td>
+                <td>{{ item.last_out_time || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+  </template>
+
+  <!-- 申请资产弹窗 -->
+  <el-dialog v-model="dialogs.asset.visible" title="申请资产" width="500px">
+    <el-form :model="dialogs.asset.form" label-width="100px">
+      <el-form-item label="申请类型">
+        <el-radio-group v-model="dialogs.asset.form.type">
+          <el-radio label="new">新购</el-radio>
+          <el-radio label="existing">领用库存</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item label="资产类目">
+        <el-select v-model="dialogs.asset.form.category" placeholder="请选择">
+          <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="品牌/型号">
+        <el-input v-model="dialogs.asset.form.brand_model" placeholder="如：MacBook Pro 14寸" />
+      </el-form-item>
+      <el-form-item label="申请理由">
+        <el-input v-model="dialogs.asset.form.reason" type="textarea" :rows="3" placeholder="请说明申请理由..." />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="dialogs.asset.visible = false">取消</el-button>
+      <el-button type="primary" @click="submitAssetApply">提交申请</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- 领用耗材弹窗 -->
+  <el-dialog v-model="dialogs.consumable.visible" title="领用耗材" width="500px">
+    <el-form :model="dialogs.consumable.form" label-width="100px">
+      <el-form-item label="选择耗材">
+        <el-select v-model="dialogs.consumable.form.item_id" placeholder="请选择耗材" filterable>
+          <el-option 
+            v-for="item in availableConsumables" 
+            :key="item.id" 
+            :label="item.name + ' (库存:' + item.quantity + ')'" 
+            :value="item.id" 
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="领用数量">
+        <el-input-number v-model="dialogs.consumable.form.quantity" :min="1" :max="99" />
+      </el-form-item>
+      <el-form-item label="用途说明">
+        <el-input v-model="dialogs.consumable.form.purpose" type="textarea" :rows="2" placeholder="请说明用途..." />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="dialogs.consumable.visible = false">取消</el-button>
+      <el-button type="primary" @click="submitConsumableApply">提交申请</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- 报修弹窗 -->
+  <el-dialog v-model="dialogs.repair.visible" title="报修申请" width="500px">
+    <el-form :model="dialogs.repair.form" label-width="100px">
+      <el-form-item label="选择资产">
+        <el-select v-model="dialogs.repair.form.asset_id" placeholder="请选择需要维修的资产">
+          <el-option 
+            v-for="item in myAssets" 
+            :key="item.id" 
+            :label="item.asset_no + ' - ' + getAssetTypeName(item.category) + ' ' + item.brand" 
+            :value="item.id" 
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="故障描述">
+        <el-input v-model="dialogs.repair.form.fault_desc" type="textarea" :rows="3" placeholder="请描述故障现象..." />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="dialogs.repair.visible = false">取消</el-button>
+      <el-button type="primary" @click="submitRepairApply">提交报修</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- 归还弹窗 -->
+  <el-dialog v-model="dialogs.return.visible" title="归还资产" width="500px">
+    <el-form :model="dialogs.return.form" label-width="100px">
+      <el-form-item label="选择资产">
+        <el-select v-model="dialogs.return.form.asset_id" placeholder="请选择要归还的在用资产" style="width:100%">
+          <el-option
+            v-for="item in myAssets.filter(a => a.status === '在用')"
+            :key="item.id"
+            :label="item.asset_no + ' - ' + getAssetTypeName(item.category) + ' ' + (item.brand||'')"
+            :value="item.id"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="归还说明">
+        <el-input v-model="dialogs.return.form.reason" type="textarea" :rows="2" placeholder="可选" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="dialogs.return.visible = false">取消</el-button>
+      <el-button type="primary" @click="submitReturnApply">提交归还申请</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- 编辑资料弹窗 -->
+  <el-dialog v-model="dialogs.profile.visible" title="编辑资料" width="460px">
+    <el-form :model="dialogs.profile.form" label-width="100px">
+      <el-form-item label="部门">
+        <el-input v-model="dialogs.profile.form.dept" placeholder="部门" />
+      </el-form-item>
+      <el-form-item label="邮箱">
+        <el-input v-model="dialogs.profile.form.email" placeholder="邮箱" />
+      </el-form-item>
+      <el-form-item label="所在地">
+        <el-input v-model="dialogs.profile.form.location" placeholder="所在地" />
+      </el-form-item>
+      <el-alert type="info" :closable="false" show-icon title="姓名与角色请联系超管修改" style="margin-bottom:8px" />
+    </el-form>
+    <template #footer>
+      <el-button @click="dialogs.profile.visible = false">取消</el-button>
+      <el-button type="primary" @click="submitEditProfile">保存</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- 修改密码弹窗 -->
+  <el-dialog v-model="dialogs.password.visible" title="修改密码" width="420px">
+    <el-form :model="dialogs.password.form" label-width="100px" :rules="passwordRules" ref="passwordForm">
+      <el-form-item label="旧密码" prop="old_password">
+        <el-input v-model="dialogs.password.form.old_password" type="password" show-password placeholder="如未设置过密码可留空" />
+      </el-form-item>
+      <el-form-item label="新密码" prop="new_password">
+        <el-input v-model="dialogs.password.form.new_password" type="password" show-password />
+      </el-form-item>
+      <el-form-item label="确认密码" prop="confirm_password">
+        <el-input v-model="dialogs.password.form.confirm_password" type="password" show-password />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="dialogs.password.visible = false">取消</el-button>
+      <el-button type="primary" @click="submitChangePassword">确认修改</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- 资产详情 -->
+  <el-dialog v-model="dialogs.assetDetail.visible" :title="'资产详情 - ' + (dialogs.assetDetail.item?.asset_no || '')" width="520px">
+    <el-descriptions v-if="dialogs.assetDetail.item" :column="2" border size="small">
+      <el-descriptions-item label="资产编号" :span="2">{{ dialogs.assetDetail.item.asset_no }}</el-descriptions-item>
+      <el-descriptions-item label="类目">{{ getAssetTypeName(dialogs.assetDetail.item.category) }}</el-descriptions-item>
+      <el-descriptions-item label="状态">
+        <el-tag :type="getStatusType(dialogs.assetDetail.item.status)" size="small">{{ dialogs.assetDetail.item.status }}</el-tag>
+      </el-descriptions-item>
+      <el-descriptions-item label="品牌">{{ dialogs.assetDetail.item.brand || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="型号">{{ dialogs.assetDetail.item.model || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="配置" :span="2">{{ dialogs.assetDetail.item.spec || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="S/N">{{ dialogs.assetDetail.item.sn || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="存放地">{{ dialogs.assetDetail.item.location || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="关联人">{{ dialogs.assetDetail.item.assignee || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="入库日">{{ dialogs.assetDetail.item.purchase_date || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="保修到期">{{ dialogs.assetDetail.item.warranty_expire || '-' }}</el-descriptions-item>
+      <el-descriptions-item label="备注" :span="2">{{ dialogs.assetDetail.item.notes || '-' }}</el-descriptions-item>
+    </el-descriptions>
+    <template #footer>
+      <el-button @click="dialogs.assetDetail.visible = false">关闭</el-button>
+      <el-button type="warning" v-if="dialogs.assetDetail.item?.status==='在用'"
+        @click="dialogs.assetDetail.visible=false; showApplyRepairFor(dialogs.assetDetail.item)">报修</el-button>
+      <el-button type="primary" v-if="dialogs.assetDetail.item?.status==='在用'"
+        @click="dialogs.assetDetail.visible=false; showReturnFor(dialogs.assetDetail.item)">归还</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- 维修中资产列表 -->
+  <el-dialog v-model="dialogs.repairing.visible" title="维修中的资产" width="640px">
+    <div v-if="!repairingAssets.length" style="padding:32px 0;text-align:center;color:#bfbfbf">暂无维修中资产</div>
+    <table v-else class="plain-table" style="width:100%">
+      <thead>
+        <tr>
+          <th>资产编号</th>
+          <th>设备</th>
+          <th>存放地</th>
+          <th>状态</th>
+          <th style="width:80px">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="item in repairingAssets" :key="'rp'+item.id">
+          <td style="font-family:monospace">{{ item.asset_no }}</td>
+          <td>{{ getAssetTypeName(item.category) }} {{ item.brand }} {{ item.model }}</td>
+          <td>{{ item.location || '-' }}</td>
+          <td><el-tag type="warning" size="small">{{ item.status }}</el-tag></td>
+          <td><el-button size="small" link type="primary" @click="viewAssetDetail(item)">详情</el-button></td>
+        </tr>
+      </tbody>
+    </table>
+    <template #footer>
+      <el-button @click="dialogs.repairing.visible = false">关闭</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- 盘点自助确认 -->
+  <el-dialog v-model="dialogs.inventory.visible" title="资产盘点确认" width="640px">
+    <div v-loading="dialogs.inventory.loading">
+      <div v-if="!dialogs.inventory.items.length" style="padding:32px 0;text-align:center;color:#bfbfbf">
+        暂无需要您确认的盘点资产
+      </div>
+      <table v-else class="plain-table" style="width:100%">
+        <thead>
+          <tr>
+            <th>任务</th>
+            <th>资产编号</th>
+            <th>存放地</th>
+            <th>状态</th>
+            <th style="width:100px">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in dialogs.inventory.items" :key="item.id">
+            <td>{{ item.task_name }}</td>
+            <td style="font-family:monospace">{{ item.asset_no }}</td>
+            <td>{{ item.before_location || '-' }}</td>
+            <td>{{ item.before_status || '-' }}</td>
+            <td>
+              <el-button size="small" type="primary"
+                :loading="dialogs.inventory.confirmingId===item.id"
+                @click="confirmInventoryItem(item)">确认在用</el-button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <template #footer>
+      <el-button @click="dialogs.inventory.visible = false">关闭</el-button>
+    </template>
+  </el-dialog>
+</div>
+
+<script>
+const { createApp, ref, reactive, computed, onMounted } = Vue;
+const { ElMessage, ElMessageBox } = ElementPlus;
+
+const API = '/api';
+
+createApp({
+  setup() {
+    // 认证状态
+    const isLoggedIn = ref(false);
+    const authLoading = ref(true);
+    
+    // 当前用户
+    const currentUser = reactive({
+      id: null,
+      name: '',
+      role: '',
+      avatar: '',
+      email: '',
+      department: '',
+      source: 'local'
+    });
+    
+    // 统计数据
+    const stats = reactive({
+      myAssets: 0,
+      myConsumables: 0,
+      todos: 0,
+      repairing: 0
+    });
+    
+    // 数据列表
+    const myAssets = ref([]);
+    const myConsumables = ref([]);
+    const todoList = ref([]);
+    const availableConsumables = ref([]);
+    const categories = ref(['显示器', '笔记本电脑', '台式电脑', '打印机', '网络设备', '手机', '平板', '其他']);
+    const meta = reactive({ asset_types: [] });
+    
+    // 弹窗控制
+    const dialogs = reactive({
+      asset: { visible: false, form: { type: 'existing', category: '', brand_model: '', reason: '' } },
+      consumable: { visible: false, form: { item_id: null, quantity: 1, purpose: '' } },
+      repair: { visible: false, form: { asset_id: null, fault_desc: '' } },
+      return: { visible: false, form: { asset_id: null, reason: '' } },
+      profile: { visible: false, form: { dept: '', email: '', location: '' } },
+      password: { visible: false, form: { old_password: '', new_password: '', confirm_password: '' } },
+      inventory: { visible: false, loading: false, items: [], confirmingId: null },
+      assetDetail: { visible: false, item: null },
+      repairing: { visible: false }
+    });
+
+    const repairingAssets = computed(() =>
+      (myAssets.value || []).filter(a => a.status === '维修中')
+    );
+    
+    const passwordForm = ref(null);
+    const passwordRules = {
+      old_password: [{ trigger: 'blur' }],  // 未设置过本地密码(如纯Lark登录)可留空直接设置初始密码
+      new_password: [{ required: true, message: '请输入新密码', trigger: 'blur' }, { min: 4, message: '密码至少4位', trigger: 'blur' }],
+      confirm_password: [{ required: true, message: '请确认密码', trigger: 'blur' }]
+    };
+    
+    const activeTab = ref('home');
+    
+    // 初始化认证
+    async function initAuth() {
+      const token = localStorage.getItem('ams_token');
+      if (!token) {
+        authLoading.value = false;
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${API}/auth/check`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (data.success && data.is_logged_in) {
+          Object.assign(currentUser, data.user);
+          isLoggedIn.value = true;
+          await loadData();
+        } else {
+          localStorage.removeItem('ams_token');
+          localStorage.removeItem('ams_user');
+        }
+      } catch (e) {
+        console.error('认证检查失败:', e);
+      } finally {
+        authLoading.value = false;
+      }
+    }
+    
+    // 加载数据
+    async function loadData() {
+      await Promise.all([
+        loadMyAssets(),
+        loadMyConsumables(),
+        loadTodos(),
+        loadAvailableConsumables(),
+        loadMeta()
+      ]);
+    }
+    
+    // 加载我的资产
+    async function loadMyAssets() {
+      try {
+        const res = await fetch(`${API}/profile/assets`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('ams_token')}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          myAssets.value = data.assets || [];
+          stats.myAssets = data.total || 0;
+          stats.repairing = data.assets?.filter(a => a.status === '维修中').length || 0;
+        }
+      } catch (e) {
+        console.error('加载资产失败:', e);
+      }
+    }
+    
+    // 加载耗材领用记录
+    async function loadMyConsumables() {
+      try {
+        const res = await fetch(`${API}/profile/consumables`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('ams_token')}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          myConsumables.value = data.consumables || [];
+          stats.myConsumables = data.total || 0;
+        }
+      } catch (e) {
+        console.error('加载耗材失败:', e);
+      }
+    }
+    
+    // 加载待办事项
+    async function loadTodos() {
+      try {
+        const res = await fetch(`${API}/profile/todos`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('ams_token')}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          todoList.value = data.todos || [];
+          stats.todos = data.total || 0;
+        }
+      } catch (e) {
+        console.error('加载待办失败:', e);
+      }
+    }
+    
+    // 加载可用耗材
+    async function loadAvailableConsumables() {
+      try {
+        const res = await fetch(`${API}/consumables?status=正常&page_size=100`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('ams_token')}` }
+        });
+        const data = await res.json();
+        if (data.data) {
+          availableConsumables.value = data.data.filter(c => c.quantity > 0);
+        }
+      } catch (e) {
+        console.error('加载可用耗材失败:', e);
+      }
+    }
+
+    // 加载元数据
+    async function loadMeta() {
+      try {
+        const res = await fetch(`${API}/meta`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('ams_token')}` }
+        });
+        const data = await res.json();
+        Object.assign(meta, data);
+      } catch (e) {
+        console.error('加载元数据失败:', e);
+      }
+    }
+
+    // 获取资产类型名称
+    function getAssetTypeName(code) {
+      const type = meta.asset_types.find(t => t.code === code);
+      return type ? type.name : code;
+    }
+    
+    // 快捷操作
+    function showApplyAsset() {
+      dialogs.asset.visible = true;
+      dialogs.asset.form = { type: 'existing', category: '', brand_model: '', reason: '' };
+    }
+    
+    function showApplyConsumable() {
+      dialogs.consumable.visible = true;
+      dialogs.consumable.form = { item_id: null, quantity: 1, purpose: '' };
+    }
+    
+    function showApplyRepair() {
+      if (myAssets.value.length === 0) {
+        ElMessage.warning('您名下没有资产');
+        return;
+      }
+      dialogs.repair.visible = true;
+      dialogs.repair.form = { asset_id: null, fault_desc: '' };
+    }
+    
+    function showReturnAsset() {
+      const inUse = myAssets.value.filter(a => a.status === '在用');
+      if (inUse.length === 0) {
+        ElMessage.warning('您名下没有可归还的在用资产');
+        return;
+      }
+      dialogs.return.visible = true;
+      dialogs.return.form = { asset_id: null, reason: '' };
+    }
+
+    async function submitReturnApply() {
+      if (!dialogs.return.form.asset_id) {
+        ElMessage.warning('请选择资产');
+        return;
+      }
+      try {
+        const res = await fetch(`${API}/profile/apply/return`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('ams_token')}`
+          },
+          body: JSON.stringify(dialogs.return.form)
+        });
+        const data = await res.json();
+        if (data.success) {
+          ElMessage.success(data.message || '归还申请已提交');
+          dialogs.return.visible = false;
+        } else {
+          ElMessage.error(data.error || '提交失败');
+        }
+      } catch (e) {
+        ElMessage.error('网络错误');
+      }
+    }
+    
+    function showEditProfile() {
+      dialogs.profile.visible = true;
+      dialogs.profile.form = {
+        dept: currentUser.department || currentUser.dept || '',
+        email: currentUser.email || '',
+        location: currentUser.location || ''
+      };
+    }
+
+    async function submitEditProfile() {
+      try {
+        const res = await fetch(`${API}/profile/update`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('ams_token')}`
+          },
+          body: JSON.stringify(dialogs.profile.form)
+        });
+        const data = await res.json();
+        if (data.success) {
+          ElMessage.success('资料已更新');
+          if (data.user) {
+            Object.assign(currentUser, {
+              ...data.user,
+              department: data.user.dept || data.user.department || ''
+            });
+            try { localStorage.setItem('ams_user', JSON.stringify({ ...currentUser })); } catch (e) {}
+          }
+          dialogs.profile.visible = false;
+        } else {
+          ElMessage.error(data.error || '保存失败');
+        }
+      } catch (e) {
+        ElMessage.error('网络错误');
+      }
+    }
+    
+    // 提交申请
+    async function submitAssetApply() {
+      try {
+        const res = await fetch(`${API}/profile/apply/asset`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('ams_token')}`
+          },
+          body: JSON.stringify(dialogs.asset.form)
+        });
+        const data = await res.json();
+        if (data.success) {
+          ElMessage.success('申请已提交');
+          dialogs.asset.visible = false;
+        } else {
+          ElMessage.error(data.error || '提交失败');
+        }
+      } catch (e) {
+        ElMessage.error('网络错误');
+      }
+    }
+    
+    async function submitConsumableApply() {
+      try {
+        const res = await fetch(`${API}/profile/apply/consumable`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('ams_token')}`
+          },
+          body: JSON.stringify(dialogs.consumable.form)
+        });
+        const data = await res.json();
+        if (data.success) {
+          ElMessage.success('申请已提交');
+          dialogs.consumable.visible = false;
+        } else {
+          ElMessage.error(data.error || '提交失败');
+        }
+      } catch (e) {
+        ElMessage.error('网络错误');
+      }
+    }
+    
+    async function submitRepairApply() {
+      try {
+        const res = await fetch(`${API}/profile/apply/repair`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('ams_token')}`
+          },
+          body: JSON.stringify(dialogs.repair.form)
+        });
+        const data = await res.json();
+        if (data.success) {
+          ElMessage.success('报修申请已提交');
+          dialogs.repair.visible = false;
+        } else {
+          ElMessage.error(data.error || '提交失败');
+        }
+      } catch (e) {
+        ElMessage.error('网络错误');
+      }
+    }
+    
+    // 修改密码
+    function showChangePassword() {
+      dialogs.password.visible = true;
+      dialogs.password.form = { old_password: '', new_password: '', confirm_password: '' };
+    }
+    
+    async function submitChangePassword() {
+      const valid = await passwordForm.value.validate().catch(() => false);
+      if (!valid) return;
+      
+      if (dialogs.password.form.new_password !== dialogs.password.form.confirm_password) {
+        ElMessage.error('两次输入的密码不一致');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${API}/auth/change-password`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('ams_token')}`
+          },
+          body: JSON.stringify({
+            old_password: dialogs.password.form.old_password,
+            new_password: dialogs.password.form.new_password
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          ElMessage.success('密码修改成功');
+          dialogs.password.visible = false;
+        } else {
+          ElMessage.error(data.error || '修改失败');
+        }
+      } catch (e) {
+        ElMessage.error('网络错误');
+      }
+    }
+    
+    // 工具函数
+    function getRoleTagType(role) {
+      const map = { '超管': 'danger', '普通管理员': 'warning', '操作员': '', '财务': 'success', '普通用户': 'info' };
+      return map[role] || 'info';
+    }
+    
+    function getStatusType(status) {
+      const map = { '在库': 'info', '在用': 'success', '维修中': 'warning', '已报废': 'danger', '已出库': '' };
+      return map[status] || '';
+    }
+    
+    function viewAssetDetail(item) {
+      dialogs.assetDetail.item = item;
+      dialogs.assetDetail.visible = true;
+    }
+
+    function showApplyRepairFor(item) {
+      dialogs.repair.visible = true;
+      dialogs.repair.form = { asset_id: item.id, fault_desc: '' };
+    }
+
+    function showReturnFor(item) {
+      dialogs.return.visible = true;
+      dialogs.return.form = { asset_id: item.id, reason: '' };
+    }
+
+    function openRepairingList() {
+      dialogs.repairing.visible = true;
+    }
+    
+    async function openInventoryConfirm() {
+      dialogs.inventory.visible = true;
+      dialogs.inventory.loading = true;
+      dialogs.inventory.items = [];
+      try {
+        const res = await fetch(`${API}/profile/inventory-pending`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('ams_token')}` }
+        });
+        const data = await res.json();
+        if (data.success) dialogs.inventory.items = data.data || [];
+        else ElMessage.error(data.error || '加载失败');
+      } catch (e) {
+        ElMessage.error('加载失败');
+      } finally {
+        dialogs.inventory.loading = false;
+      }
+    }
+
+    async function confirmInventoryItem(item) {
+      dialogs.inventory.confirmingId = item.id;
+      try {
+        const res = await fetch(`${API}/inventory/items/${item.id}/confirm`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('ams_token')}`
+          },
+          body: JSON.stringify({ confirmed_by: currentUser.name, notes: '' })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          ElMessage.error(data.error || '确认失败');
+          return;
+        }
+        ElMessage.success('已确认盘点');
+        dialogs.inventory.items = dialogs.inventory.items.filter(x => x.id !== item.id);
+        await loadTodos();
+        if (!dialogs.inventory.items.length) dialogs.inventory.visible = false;
+      } catch (e) {
+        ElMessage.error('确认失败');
+      } finally {
+        dialogs.inventory.confirmingId = null;
+      }
+    }
+
+    function handleTodo(item) {
+      if (item.type === 'inventory') {
+        openInventoryConfirm();
+        return;
+      }
+      if (item.type === 'approval') {
+        window.location.href = '/main.html';
+        return;
+      }
+      if (item.type === 'repair') {
+        openRepairingList();
+        return;
+      }
+      ElMessage.info(`处理: ${item.title}`);
+    }
+    
+    function goToLogin() {
+      window.location.href = '/login.html';
+    }
+    
+    function goToIndex() {
+      window.location.href = '/index.html';
+    }
+    
+    async function handleLogout() {
+      ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(async () => {
+        const token = localStorage.getItem('ams_token');
+        if (token) {
+          try {
+            await fetch(`${API}/auth/logout`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+          } catch (e) {}
+        }
+        localStorage.removeItem('ams_token');
+        localStorage.removeItem('ams_user');
+        isLoggedIn.value = false;
+        goToLogin();
+      }).catch(() => {});
+    }
+    
+    onMounted(() => {
+      initAuth();
+    });
+    
+    return {
+      isLoggedIn, authLoading, currentUser, stats,
+      myAssets, myConsumables, todoList, availableConsumables, categories,
+      dialogs, passwordForm, passwordRules, activeTab, repairingAssets,
+      showApplyAsset, showApplyConsumable, showApplyRepair, showReturnAsset,
+      submitAssetApply, submitConsumableApply, submitRepairApply, submitReturnApply,
+      showChangePassword, submitChangePassword, showEditProfile, submitEditProfile,
+      getRoleTagType, getStatusType, viewAssetDetail, handleTodo,
+      openInventoryConfirm, confirmInventoryItem,
+      showApplyRepairFor, showReturnFor, openRepairingList,
+      goToLogin, goToIndex, handleLogout, getAssetTypeName
+    };
+  }
+}).use(ElementPlus, { locale: ElementPlusLocaleZhCn }).mount('#app');
+</script>
+</body>
+</html>

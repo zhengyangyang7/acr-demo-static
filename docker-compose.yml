@@ -1,10 +1,43 @@
-name: weekly-update
-
 services:
-  weekly-update:
+  backend:
     build: .
+    container_name: ams-backend
+    restart: unless-stopped
     ports:
-      - "8765:8765"
+      - "8088:8088"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config
+      - ./logs:/var/log/ams
     environment:
-      ZHOUDU_BIND: "0.0.0.0"
-      ZHOUDU_PORT: "8765"
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+      - DATA_DIR=/app/data
+      - LARK_APP_ID=${LARK_APP_ID:-}
+      - LARK_APP_SECRET=${LARK_APP_SECRET:-}
+      - LARK_REDIRECT_URI=${LARK_REDIRECT_URI:-https://aap.hknhw.com}
+    networks:
+      - ams-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: ams-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:rw
+      - ./data/uploads:/usr/share/nginx/html/uploads:rw
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - backend
+    networks:
+      - ams-network
+
+networks:
+  ams-network:
+    driver: bridge

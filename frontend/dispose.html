@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<script src="./ams-role.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>资产处理 - 企业资产管理系统</title>
+<link rel="stylesheet" href="./lib/element-plus.index.css">
+<script src="./lib/vue.global.prod.js"></script>
+<script src="./lib/element-plus.index.full.min.js"></script>
+<script src="./lib/element-plus-zh-cn.min.js"></script>
+<script src="./ams-ep-zh.js"></script>
+<script src="./lib/element-plus-icons.iife.min.js"></script>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f0f2f5; }
+.app-container { max-width: 800px; margin: 0 auto; padding: 20px; }
+.header {
+  background: #c4482d;
+  color: #fff;
+  padding: 24px 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.header h1 { margin: 0 0 8px; font-size: 22px; }
+.header p { margin: 0; opacity: 0.9; font-size: 14px; }
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1f35;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.steps { display: flex; justify-content: center; margin-bottom: 24px; }
+.step { display: flex; flex-direction: column; align-items: center; position: relative; padding: 0 30px; }
+.step:not(:last-child)::after { content: ''; position: absolute; top: 16px; right: -30px; width: 60px; height: 2px; background: #e0e0e0; }
+.step.active:not(:last-child)::after { background: #ff6b6b; }
+.step-num { width: 32px; height: 32px; border-radius: 50%; background: #e0e0e0; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; margin-bottom: 8px; }
+.step.active .step-num { background: #ff6b6b; }
+.step-text { font-size: 12px; color: #8c8c8c; }
+.step.active .step-text { color: #ff6b6b; font-weight: 500; }
+.search-box { margin-bottom: 16px; }
+.asset-result { background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 8px; padding: 16px; margin-top: 12px; }
+.asset-result.error { background: #fff1f0; border-color: #ffa39e; }
+.asset-result .asset-no { font-size: 18px; font-weight: 600; color: #1a1f35; margin-bottom: 8px; }
+.asset-result .asset-info { font-size: 14px; color: #595959; line-height: 1.8; }
+.photo-upload { border: 2px dashed #d9d9d9; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s; }
+.photo-upload:hover { border-color: #ff6b6b; }
+.photo-upload.has-files { border-color: #52c41a; background: #f6ffed; }
+.photo-upload .upload-icon { font-size: 32px; color: #bfbfbf; margin-bottom: 8px; }
+.photo-upload .upload-text { color: #595959; font-size: 14px; }
+.photo-upload .upload-hint { color: #8c8c8c; font-size: 12px; margin-top: 4px; }
+.photo-preview-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; margin-top: 16px; }
+.photo-preview-item { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0; }
+.photo-preview-item img { width: 100%; height: 100%; object-fit: cover; }
+.photo-preview-item .remove-btn { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; background: rgba(0,0,0,0.5); color: #fff; border: none; border-radius: 50%; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+.submit-btn { width: 100%; padding: 14px; font-size: 16px; border-radius: 8px; }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #e0e0e0; display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; }
+.bottom-nav-item { display: flex; flex-direction: column; align-items: center; padding: 4px 16px; color: #8c8c8c; text-decoration: none; font-size: 12px; }
+.bottom-nav-item.active { color: #ff6b6b; }
+.bottom-nav-item .icon { font-size: 20px; margin-bottom: 2px; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; color: #ff6b6b; text-decoration: none; font-size: 14px; margin-bottom: 16px; }
+.back-link:hover { opacity: 0.8; }
+.success-box { text-align: center; padding: 40px 20px; }
+.success-box .success-icon { width: 80px; height: 80px; background: #52c41a; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #fff; margin: 0 auto 20px; }
+.success-box h2 { margin: 0 0 8px; color: #1a1f35; }
+.success-box p { margin: 0; color: #8c8c8c; }
+.dispose-type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+@media (max-width: 480px) { .dispose-type-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 768px) {
+  html, body { overflow-x: hidden; max-width: 100vw; }
+  .app-container { padding: 12px; max-width: 100%; }
+}
+.dispose-type-item { padding: 16px; border: 2px solid #e0e0e0; border-radius: 8px; text-align: center; cursor: pointer; transition: all 0.3s; }
+.dispose-type-item:hover { border-color: #ff6b6b; }
+.dispose-type-item.active { border-color: #ff6b6b; background: #c4482d; color: #fff; }
+.dispose-type-item .icon { font-size: 28px; margin-bottom: 8px; }
+.dispose-type-item .label { font-size: 14px; font-weight: 500; }
+</style>
+<script src="./auth-guard.js"></script>
+</head>
+<body>
+<div id="app">
+  <div class="app-container" style="padding-bottom: 80px;">
+    <a href="index.html" class="back-link" id="backLink" onclick="window.location.href='/main.html';return false;">← 返回首页</a>
+    <div class="header">
+      <h1>🗑️ 资产处理</h1>
+      <p>报废、捐赠、出售等资产处置操作</p>
+    </div>
+    <div class="steps">
+      <div class="step" :class="{active: step>=1}"><div class="step-num">1</div><div class="step-text">选择资产</div></div>
+      <div class="step" :class="{active: step>=2}"><div class="step-num">2</div><div class="step-text">处理方式</div></div>
+      <div class="step" :class="{active: step>=3}"><div class="step-num">3</div><div class="step-text">完成</div></div>
+    </div>
+    <div v-if="step===1" class="card">
+      <div class="card-title">选择需要处理的资产</div>
+      <div class="search-box">
+        <el-input v-model="searchQuery" placeholder="输入资产编号、SN或关联人搜索" size="large" clearable @keyup.enter="searchAsset">
+          <template #append><el-button @click="searchAsset">搜索</el-button></template>
+        </el-input>
+      </div>
+      <div v-if="searchResults.length > 0" style="margin-top: 12px;">
+        <div style="font-size: 14px; color: #8c8c8c; margin-bottom: 12px;">找到 {{ searchResults.length }} 个结果，请选择：</div>
+        <div v-for="asset in searchResults" :key="asset.id" class="asset-result" style="margin-bottom: 12px; cursor: pointer;" @click="confirmAsset(asset)">
+          <div class="asset-no">{{ asset.asset_no }}</div>
+          <div class="asset-info">
+            <div>类目：{{ getAssetTypeName(asset.category) }}</div>
+            <div>品牌型号：{{ asset.brand }} {{ asset.model }}</div>
+            <div>当前状态：<el-tag size="small" :type="statusType(asset.status)">{{ asset.status }}</el-tag></div>
+            <div>存放地：{{ asset.location }}</div>
+            <div>关联人：{{ asset.assignee || '-' }}</div>
+          </div>
+          <el-button type="primary" style="margin-top: 12px; width: 100%;" @click.stop="confirmAsset(asset)">选择此资产</el-button>
+        </div>
+      </div>
+      <div v-else-if="searched && searchResults.length === 0" class="asset-result error">
+        <div style="text-align: center; color: #ff4d4f;"><div style="font-size: 24px; margin-bottom: 8px;">😕</div><div>未找到匹配的资产</div></div>
+      </div>
+    </div>
+    <div v-if="step===2" class="card">
+      <div class="card-title">选择处理方式</div>
+      <div class="asset-result" style="margin-bottom: 20px;">
+        <div class="asset-no">{{ selectedAsset?.asset_no }}</div>
+        <div class="asset-info">{{ selectedAsset?.category }} {{ selectedAsset?.brand }} {{ selectedAsset?.model }}</div>
+      </div>
+      <div class="dispose-type-grid">
+        <div class="dispose-type-item" :class="{active: form.dispose_type==='报废'}" @click="form.dispose_type='报废'">
+          <div class="icon">🗑️</div><div class="label">报废</div>
+        </div>
+        <div class="dispose-type-item" :class="{active: form.dispose_type==='捐赠'}" @click="form.dispose_type='捐赠'">
+          <div class="icon">🎁</div><div class="label">捐赠</div>
+        </div>
+        <div class="dispose-type-item" :class="{active: form.dispose_type==='出售'}" @click="form.dispose_type='出售'">
+          <div class="icon">💰</div><div class="label">出售</div>
+        </div>
+        <div class="dispose-type-item" :class="{active: form.dispose_type==='丢失'}" @click="form.dispose_type='丢失'">
+          <div class="icon">❓</div><div class="label">丢失</div>
+        </div>
+        <div class="dispose-type-item" :class="{active: form.dispose_type==='其他'}" @click="form.dispose_type='其他'">
+          <div class="icon">📋</div><div class="label">其他</div>
+        </div>
+      </div>
+      <el-form :model="form" label-position="top">
+        <el-form-item label="处理原因" required><el-input v-model="form.reason" type="textarea" :rows="3" placeholder="请说明处理原因"/></el-form-item>
+        <el-form-item label="经办人" required><el-input v-model="form.operator" placeholder="输入您的姓名"/></el-form-item>
+        <el-form-item label="审批人"><el-input v-model="form.approved_by" placeholder="可选：审批人姓名"/></el-form-item>
+        <el-form-item label="处理日期"><el-date-picker v-model="form.dispose_date" type="date" placeholder="选择日期" style="width: 100%;"/></el-form-item>
+        <el-form-item label="备注"><el-input v-model="form.notes" type="textarea" :rows="2" placeholder="可选"/></el-form-item>
+        <el-form-item label="资产照片（必填）" required>
+          <div class="photo-upload" :class="{'has-files': photos.length>0}" @click="selectPhotos">
+            <div class="upload-icon">📷</div>
+            <div class="upload-text">点击上传资产照片</div>
+            <div class="upload-hint">请拍摄资产现状照片，最多 5 张</div>
+          </div>
+          <input type="file" ref="fileInput" multiple accept="image/*" style="display: none;" @change="handleFileChange">
+          <div class="photo-preview-list" v-if="photos.length>0">
+            <div class="photo-preview-item" v-for="(photo, idx) in photos" :key="idx">
+              <img :src="photo.preview" alt="preview"><button class="remove-btn" @click.stop="removePhoto(idx)">×</button>
+            </div>
+          </div>
+        </el-form-item>
+        <el-form-item :label="proofLabel" :required="proofRequired">
+          <div class="photo-upload" :class="{'has-files': proofs.length>0}" @click="selectProof">
+            <div class="upload-icon">📄</div>
+            <div class="upload-text">点击上传处置证明</div>
+            <div class="upload-hint">{{ proofHint }}</div>
+          </div>
+          <input type="file" ref="proofInput" multiple accept="image/*" style="display: none;" @change="handleProofChange">
+          <div class="photo-preview-list" v-if="proofs.length>0">
+            <div class="photo-preview-item" v-for="(photo, idx) in proofs" :key="idx">
+              <img :src="photo.preview" alt="preview"><button class="remove-btn" @click.stop="removeProof(idx)">×</button>
+            </div>
+          </div>
+        </el-form-item>
+      </el-form>
+      <div style="display: flex; gap: 12px;">
+        <el-button style="flex: 1;" @click="step=1">上一步</el-button>
+        <el-button type="primary" style="flex: 2;" class="submit-btn" :loading="submitting" @click="submit">确认{{ form.dispose_type }}</el-button>
+      </div>
+    </div>
+    <div v-if="step===3" class="card">
+      <div class="success-box">
+        <div class="success-icon">✓</div>
+        <h2>资产{{ form.dispose_type }}处理完成</h2>
+        <p>操作已记录，资产状态已更新</p>
+        <el-button type="primary" style="margin-top: 24px; width: 200px;" @click="reset">继续处理</el-button>
+      </div>
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <a href="stock.html" class="bottom-nav-item"><span class="icon">📦</span><span>出入库</span></a>
+    <a href="repair.html" class="bottom-nav-item"><span class="icon">🔧</span><span>报修</span></a>
+    <a href="dispose.html" class="bottom-nav-item active"><span class="icon">🗑️</span><span>处理</span></a>
+    <a href="index.html" class="bottom-nav-item" onclick="window.location.href='/main.html';return false;"><span class="icon">🏠</span><span>首页</span></a>
+  </nav>
+</div>
+<script>
+const { createApp, ref, reactive, computed, onMounted } = Vue;
+const API = '/api';
+createApp({
+  setup() {
+    const step = ref(1);
+    const form = reactive({ asset_id: '', dispose_type: '报废', reason: '', operator: '', approved_by: '', dispose_date: '', notes: '' });
+    const searchQuery = ref('');
+    const searchResults = ref([]);
+    const searched = ref(false);
+    const selectedAsset = ref(null);
+    const photos = ref([]);
+    const fileInput = ref(null);
+    const proofs = ref([]);
+    const proofInput = ref(null);
+    const submitting = ref(false);
+    const meta = reactive({ asset_types: [] });
+
+    // 处置证明：丢失需派出所/人力/财务证明；报废需安全处理证明；其余可选
+    const PROOF_MAP = {
+      '丢失': { label: '处置证明（派出所 / 人力 / 财务证明）', hint: '丢失资产需提供派出所报案、人力或财务出具的相关证明', required: true },
+      '报废': { label: '处置证明（安全处理证明）', hint: '报废资产需提供安全处理（环保/回收）相关证明', required: true },
+      '捐赠': { label: '处置证明（可选）', hint: '如有捐赠/接收凭证可上传', required: false },
+      '出售': { label: '处置证明（可选）', hint: '如有出售/转让凭证可上传', required: false },
+      '其他': { label: '处置证明（可选）', hint: '如有相关凭证可上传', required: false }
+    };
+    const proofLabel = computed(() => (PROOF_MAP[form.dispose_type] || PROOF_MAP['其他']).label);
+    const proofHint = computed(() => (PROOF_MAP[form.dispose_type] || PROOF_MAP['其他']).hint);
+    const proofRequired = computed(() => (PROOF_MAP[form.dispose_type] || PROOF_MAP['其他']).required);
+
+    // 获取资产类型名称
+    function getAssetTypeName(code) {
+      const type = meta.asset_types.find(t => t.code === code);
+      return type ? type.name : code;
+    }
+
+    async function loadMeta() {
+      const r = await fetch(`${API}/meta`).then(r => r.json());
+      Object.assign(meta, r);
+    }
+    async function searchAsset() {
+      // scope=all 跳过权限隔离，资产处理需要看到任意员工名下的资产
+      const kw = searchQuery.value.trim();
+      searched.value = !!kw;
+      const url = kw
+        ? `${API}/assets?q=${encodeURIComponent(kw)}&page_size=20&scope=all`
+        : `${API}/assets?page_size=20&scope=all`;
+      const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('ams_token') || '') } }).then(r => r.json());
+      searchResults.value = res.data || [];
+    }
+    function confirmAsset(asset) {
+      selectedAsset.value = asset;
+      form.asset_id = asset.id;
+      step.value = 2;
+    }
+    function selectPhotos() { fileInput.value?.click(); }
+    function handleFileChange(e) {
+      const files = Array.from(e.target.files);
+      if (photos.value.length + files.length > 5) { ElementPlus.ElMessage.warning('最多只能上传5张照片'); return; }
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => { photos.value.push({ file, preview: e.target.result }); };
+        reader.readAsDataURL(file);
+      });
+    }
+    function removePhoto(idx) { photos.value.splice(idx, 1); }
+    function selectProof() { proofInput.value?.click(); }
+    function handleProofChange(e) {
+      const files = Array.from(e.target.files);
+      if (proofs.value.length + files.length > 5) { ElementPlus.ElMessage.warning('处置证明最多上传 5 张'); return; }
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (ev) => { proofs.value.push({ file, preview: ev.target.result }); };
+        reader.readAsDataURL(file);
+      });
+    }
+    function removeProof(idx) { proofs.value.splice(idx, 1); }
+    async function submit() {
+      if (!form.dispose_type) { ElementPlus.ElMessage.warning('请选择处理方式'); return; }
+      if (!form.reason) { ElementPlus.ElMessage.warning('请填写处理原因'); return; }
+      if (!form.operator) { ElementPlus.ElMessage.warning('请填写经办人'); return; }
+      if (photos.value.length === 0) { ElementPlus.ElMessage.warning('请至少上传一张资产照片'); return; }
+      if (proofRequired.value && proofs.value.length === 0) { ElementPlus.ElMessage.warning(`请上传${proofLabel.value}`); return; }
+      submitting.value = true;
+      const formData = new FormData();
+      Object.keys(form).forEach(key => { if (form[key]) formData.append(key, form[key]); });
+      photos.value.forEach(p => { formData.append('photos', p.file); });
+      proofs.value.forEach(p => { formData.append('proof_photos', p.file); });
+      try {
+        const res = await fetch(`${API}/quick/dispose`, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (res.ok) { step.value = 3; } else { ElementPlus.ElMessage.error(data.error || '操作失败'); }
+      } catch (e) { ElementPlus.ElMessage.error('网络错误'); }
+      submitting.value = false;
+    }
+    function reset() {
+      step.value = 1;
+      form.asset_id = ''; form.dispose_type = '报废'; form.reason = ''; form.operator = ''; form.approved_by = ''; form.dispose_date = ''; form.notes = '';
+      searchQuery.value = ''; searchResults.value = []; searched.value = false; selectedAsset.value = null; photos.value = []; proofs.value = [];
+    }
+    function statusType(status) { return { '在库': 'success', '在用': 'primary', '维修中': 'warning', '已报废': 'danger' }[status] || 'info'; }
+    onMounted(() => { loadMeta(); });
+    return { step, form, searchQuery, searchResults, searched, selectedAsset, photos, fileInput, proofs, proofInput, proofLabel, proofHint, proofRequired, submitting, searchAsset, confirmAsset, selectPhotos, handleFileChange, removePhoto, selectProof, handleProofChange, removeProof, submit, reset, statusType, getAssetTypeName };
+  }
+}).use(ElementPlus, { locale: ElementPlusLocaleZhCn }).mount('#app');
+</script>
+</body>
+</html>

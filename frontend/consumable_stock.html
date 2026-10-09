@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<script src="./ams-role.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>耗材出入库 - 企业资产管理系统</title>
+<link rel="stylesheet" href="./lib/element-plus.index.css">
+<script src="./lib/vue.global.prod.js"></script>
+<script src="./lib/element-plus.index.full.min.js"></script>
+<script src="./lib/element-plus-zh-cn.min.js"></script>
+<script src="./ams-ep-zh.js"></script>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f0f2f5; }
+
+.app-container { max-width: 800px; margin: 0 auto; padding: 20px; }
+
+.header {
+  background: #389e0d;
+  color: #fff;
+  padding: 24px 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.header h1 { margin: 0 0 8px; font-size: 22px; }
+.header p { margin: 0; opacity: 0.9; font-size: 14px; }
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1f35;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* 步骤条 */
+.steps {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  padding: 0 20px;
+}
+.step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  right: -20px;
+  width: 40px;
+  height: 2px;
+  background: #e0e0e0;
+}
+.step.active:not(:last-child)::after { background: #52c41a; }
+.step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.step.active .step-num { background: #52c41a; }
+.step-text { font-size: 12px; color: #8c8c8c; }
+.step.active .step-text { color: #52c41a; font-weight: 500; }
+
+/* 耗材搜索 */
+.search-box { margin-bottom: 16px; }
+.consumable-result {
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 12px;
+}
+.consumable-result.error {
+  background: #fff1f0;
+  border-color: #ffa39e;
+}
+.consumable-result .item-no { font-size: 16px; font-weight: 600; color: #1a1f35; margin-bottom: 8px; }
+.consumable-result .item-info { font-size: 14px; color: #595959; line-height: 1.8; }
+
+/* 操作类型选择 */
+.op-types {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.op-type-btn {
+  padding: 20px;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+}
+.op-type-btn:hover { border-color: #52c41a; }
+.op-type-btn .icon { font-size: 32px; margin-bottom: 8px; display: block; }
+.op-type-btn .label { font-size: 15px; font-weight: 500; color: #1a1f35; }
+.op-type-btn .desc { font-size: 12px; color: #8c8c8c; margin-top: 4px; }
+
+/* 最近记录 */
+.recent-list { max-height: 300px; overflow-y: auto; }
+.recent-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.recent-item:last-child { border-bottom: none; }
+.recent-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  margin-right: 12px;
+}
+.recent-icon.in { background: #f6ffed; color: #52c41a; }
+.recent-icon.out { background: #e6f4ff; color: #1677ff; }
+.recent-info { flex: 1; }
+.recent-title { font-size: 14px; color: #1a1f35; margin-bottom: 2px; }
+.recent-meta { font-size: 12px; color: #8c8c8c; }
+.recent-time { font-size: 12px; color: #bfbfbf; }
+
+/* 成功页面 */
+.success-box { text-align: center; padding: 40px 20px; }
+.success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #52c41a;
+  color: #fff;
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+.success-box h2 { color: #1a1f35; margin-bottom: 8px; }
+.success-box p { color: #8c8c8c; margin-bottom: 24px; }
+
+/* 底部导航 */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-top: 1px solid #e8e8e8;
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0;
+  z-index: 100;
+}
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: #8c8c8c;
+  font-size: 11px;
+  padding: 4px 12px;
+}
+.bottom-nav-item .icon { font-size: 20px; margin-bottom: 2px; }
+.bottom-nav-item.active { color: #52c41a; }
+
+.submit-btn {
+  background: #389e0d;
+  border: none;
+}
+.submit-btn:hover {
+  background: #2f7d12;
+}
+@media (max-width: 768px) {
+  html, body { overflow-x: hidden; max-width: 100vw; }
+  .app-container { padding: 12px; max-width: 100%; }
+}
+</style>
+<script src="./auth-guard.js"></script>
+</head>
+<body>
+<div id="app" class="app-container">
+  <div class="header">
+    <h1>🧪 耗材出入库</h1>
+    <p>快速领用、归还耗材</p>
+  </div>
+
+  <!-- 步骤1: 选择操作类型 -->
+  <div v-if="step===1" class="card">
+    <div class="card-title">选择操作类型</div>
+    <div class="op-types">
+      <div class="op-type-btn" @click="selectOpType('出库')">
+        <span class="icon">📦</span>
+        <div class="label">耗材领用</div>
+        <div class="desc">从仓库领用耗材</div>
+      </div>
+      <div class="op-type-btn" @click="selectOpType('入库')">
+        <span class="icon">📥</span>
+        <div class="label">耗材归还</div>
+        <div class="desc">归还耗材到仓库</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 步骤2: 搜索耗材 -->
+  <div v-if="step===2" class="card">
+    <div class="card-title">搜索耗材</div>
+    <div class="search-box">
+      <el-input
+        v-model="searchQuery"
+        placeholder="输入耗材名称、编号或型号"
+        size="large"
+        clearable
+        @keyup.enter="searchConsumable"
+      >
+        <template #append>
+          <el-button @click="searchConsumable">搜索</el-button>
+        </template>
+      </el-input>
+    </div>
+
+    <!-- 搜索结果 -->
+    <div v-if="searched && searchResults.length === 0" class="consumable-result error">
+      <div class="item-no">未找到耗材</div>
+      <div class="item-info">请检查搜索关键词是否正确</div>
+    </div>
+
+    <div v-for="item in searchResults" :key="item.id" class="consumable-result">
+      <div class="item-no">{{ item.name }} ({{ item.item_no }})</div>
+      <div class="item-info">
+        <div>类别: {{ item.category }} | 品牌: {{ item.brand || '-' }} | 型号: {{ item.model || '-' }}</div>
+        <div>当前库存: {{ item.quantity }} {{ item.unit }} | 状态: {{ item.status }}</div>
+        <div>存放位置: {{ item.location || '-' }}</div>
+      </div>
+      <el-button type="primary" style="margin-top: 12px;" @click="confirmConsumable(item)">
+        选择此耗材
+      </el-button>
+    </div>
+
+    <el-button style="margin-top: 16px;" @click="step=1">返回</el-button>
+  </div>
+
+  <!-- 步骤3: 填写信息 -->
+  <div v-if="step===3" class="card">
+    <div class="card-title">填写{{ form.log_type }}信息</div>
+
+    <div v-if="selectedConsumable" class="consumable-result" style="margin-bottom: 16px;">
+      <div class="item-no">{{ selectedConsumable.name }} ({{ selectedConsumable.item_no }})</div>
+      <div class="item-info">
+        <div>当前库存: {{ selectedConsumable.quantity }} {{ selectedConsumable.unit }}</div>
+      </div>
+    </div>
+
+    <el-form :model="form" label-position="top">
+      <el-form-item label="数量" required>
+        <el-input-number v-model="form.quantity" :min="1" :max="maxQuantity" style="width: 100%;" />
+        <div v-if="form.log_type==='出库'" style="font-size: 12px; color: #8c8c8c; margin-top: 4px;">
+          最大可领用: {{ maxQuantity }} {{ selectedConsumable?.unit }}
+        </div>
+      </el-form-item>
+
+      <!-- 出库显示领用人 -->
+      <el-form-item label="领用人" v-if="form.log_type==='出库'" required>
+        <el-select
+          v-model="form.target_user"
+          filterable
+          remote
+          reserve-keyword
+          allow-create
+          placeholder="输入姓名搜索或直接输入"
+          :remote-method="searchUsers"
+          :loading="userSearchLoading"
+          style="width: 100%;">
+          <el-option v-for="user in userSearchResults" :key="user.id" :label="user.name" :value="user.name"/>
+        </el-select>
+      </el-form-item>
+
+      <!-- 入库显示归还人 -->
+      <el-form-item label="归还人" v-if="form.log_type==='入库'" required>
+        <el-select
+          v-model="form.target_user"
+          filterable
+          remote
+          reserve-keyword
+          allow-create
+          placeholder="输入姓名搜索或直接输入"
+          :remote-method="searchUsers"
+          :loading="userSearchLoading"
+          style="width: 100%;">
+          <el-option v-for="user in userSearchResults" :key="user.id" :label="user.name" :value="user.name"/>
+        </el-select>
+      </el-form-item>
+
+      <el-form-item label="经办人" required>
+        <el-input v-model="form.operator" placeholder="输入您的姓名"/>
+      </el-form-item>
+
+      <el-form-item label="备注">
+        <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="可选：填写备注信息"/>
+      </el-form-item>
+    </el-form>
+
+    <div style="display: flex; gap: 12px;">
+      <el-button style="flex: 1;" @click="step=2">上一步</el-button>
+      <el-button type="primary" style="flex: 2;" class="submit-btn" :loading="submitting" @click="submit">
+        确认{{ form.log_type }}
+      </el-button>
+    </div>
+  </div>
+
+  <!-- 成功页面 -->
+  <div v-if="step===4" class="card">
+    <div class="success-box">
+      <div class="success-icon">✓</div>
+      <h2>{{ form.log_type }}成功</h2>
+      <p>操作已记录</p>
+      <el-button type="primary" style="margin-top: 24px; width: 200px;" @click="reset">
+        继续操作
+      </el-button>
+    </div>
+  </div>
+
+  <!-- 最近记录 -->
+  <div class="card" v-if="step===1">
+    <div class="card-title">最近耗材记录</div>
+    <div class="recent-list">
+      <div v-for="log in recentLogs" :key="log.id" class="recent-item">
+        <div :class="['recent-icon', log.log_type==='入库'?'in':'out']">
+          {{ log.log_type==='入库'?'📥':'📦' }}
+        </div>
+        <div class="recent-info">
+          <div class="recent-title">{{ log.item_no }} - {{ log.log_type }}{{ log.quantity }}件</div>
+          <div class="recent-meta">{{ log.target_user || log.operator }} | {{ log.location || '-' }}</div>
+        </div>
+        <div class="recent-time">{{ formatTime(log.log_time) }}</div>
+      </div>
+      <div v-if="recentLogs.length===0" style="text-align: center; color: #8c8c8c; padding: 20px;">
+        暂无记录
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部导航 -->
+  <nav class="bottom-nav">
+    <a href="stock.html" class="bottom-nav-item">
+      <span class="icon">📦</span>
+      <span>资产</span>
+    </a>
+    <a href="consumable_stock.html" class="bottom-nav-item active">
+      <span class="icon">🧪</span>
+      <span>耗材</span>
+    </a>
+    <a href="repair.html" class="bottom-nav-item">
+      <span class="icon">🔧</span>
+      <span>报修</span>
+    </a>
+    <a href="index.html" class="bottom-nav-item">
+      <span class="icon">🏠</span>
+      <span>首页</span>
+    </a>
+  </nav>
+</div>
+
+<script>
+const { createApp, ref, reactive, onMounted, computed } = Vue;
+const API = '/api';
+
+createApp({
+  setup() {
+    const step = ref(1);
+    const form = reactive({
+      log_type: '出库',
+      item_id: '',
+      quantity: 1,
+      target_user: '',
+      operator: '',
+      remark: ''
+    });
+    const searchQuery = ref('');
+    const searchResults = ref([]);
+    const searched = ref(false);
+    const selectedConsumable = ref(null);
+    const recentLogs = ref([]);
+    const submitting = ref(false);
+    const userSearchResults = ref([]);
+    const userSearchLoading = ref(false);
+    let userSearchTimer = null;
+
+    const maxQuantity = computed(() => {
+      if (form.log_type === '入库') return 9999;
+      return selectedConsumable.value?.quantity || 0;
+    });
+
+    function selectOpType(type) {
+      form.log_type = type;
+      step.value = 2;
+      // 进入步骤2 时自动加载默认耗材列表
+      searchConsumable();
+    }
+
+    async function searchConsumable() {
+      // 默认展示全部耗材（不传 q），搜索时按 q 过滤
+      const kw = searchQuery.value.trim();
+      searched.value = !!kw;
+      const url = kw
+        ? `${API}/consumables?q=${encodeURIComponent(kw)}&page_size=20`
+        : `${API}/consumables?page_size=50`;
+      const res = await fetch(url).then(r => r.json());
+      searchResults.value = res.data || [];
+    }
+
+    function confirmConsumable(item) {
+      selectedConsumable.value = item;
+      form.item_id = item.id;
+      form.quantity = 1;
+      step.value = 3;
+    }
+
+    // 搜索用户
+    async function searchUsers(query) {
+      if (!query || query.length < 1) {
+        userSearchResults.value = [];
+        return;
+      }
+      userSearchLoading.value = true;
+      clearTimeout(userSearchTimer);
+      userSearchTimer = setTimeout(async () => {
+        try {
+          const res = await fetch(`${API}/employees/search?q=${encodeURIComponent(query)}`, { headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('ams_token') || '') } });
+          const data = await res.json();
+          userSearchResults.value = data.data || [];
+        } catch (e) {
+          userSearchResults.value = [];
+        } finally {
+          userSearchLoading.value = false;
+        }
+      }, 300);
+    }
+
+    async function submit() {
+      if (!form.quantity || form.quantity <= 0) {
+        ElementPlus.ElMessage.warning('请填写数量');
+        return;
+      }
+      if (!form.target_user) {
+        ElementPlus.ElMessage.warning(form.log_type === '出库' ? '请填写领用人' : '请填写归还人');
+        return;
+      }
+      if (!form.operator) {
+        ElementPlus.ElMessage.warning('请填写经办人');
+        return;
+      }
+
+      submitting.value = true;
+      try {
+        const endpoint = form.log_type === '入库' ? '/consumables/stock/in' : '/consumables/stock/out';
+        const res = await fetch(`${API}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            item_id: form.item_id,
+            quantity: form.quantity,
+            operator: form.operator,
+            target_user: form.target_user,
+            remark: form.remark,
+            location: selectedConsumable.value?.location || ''
+          })
+        });
+        const data = await res.json();
+        if (data.ok || data.success) {
+          step.value = 4;
+        } else {
+          ElementPlus.ElMessage.error(data.error || '操作失败');
+        }
+      } catch (e) {
+        ElementPlus.ElMessage.error('网络错误');
+      }
+      submitting.value = false;
+    }
+
+    function reset() {
+      step.value = 1;
+      form.log_type = '出库';
+      form.item_id = '';
+      form.quantity = 1;
+      form.target_user = '';
+      form.operator = '';
+      form.remark = '';
+      searchQuery.value = '';
+      searchResults.value = [];
+      searched.value = false;
+      selectedConsumable.value = null;
+      loadRecentLogs();
+    }
+
+    function formatTime(time) {
+      if (!time) return '-';
+      const date = new Date(time);
+      return `${date.getMonth()+1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2,'0')}`;
+    }
+
+    async function loadRecentLogs() {
+      const r = await fetch(`${API}/consumables/logs?page_size=10`).then(r => r.json());
+      recentLogs.value = r.data || [];
+    }
+
+    onMounted(() => {
+      loadRecentLogs();
+    });
+
+    return {
+      step, form, searchQuery, searchResults, searched, selectedConsumable,
+      recentLogs, submitting, userSearchResults, userSearchLoading, maxQuantity,
+      selectOpType, searchConsumable, confirmConsumable, searchUsers, submit, reset, formatTime
+    };
+  }
+}).use(ElementPlus, { locale: ElementPlusLocaleZhCn }).mount('#app');
+</script>
+</body>
+</html>

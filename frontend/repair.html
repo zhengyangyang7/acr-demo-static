@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<script src="./ams-role.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>资产报修 - 企业资产管理系统</title>
+<link rel="stylesheet" href="./lib/element-plus.index.css">
+<script src="./lib/vue.global.prod.js"></script>
+<script src="./lib/element-plus.index.full.min.js"></script>
+<script src="./lib/element-plus-zh-cn.min.js"></script>
+<script src="./ams-ep-zh.js"></script>
+<script src="./lib/element-plus-icons.iife.min.js"></script>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f0f2f5; }
+
+.app-container { max-width: 800px; margin: 0 auto; padding: 20px; }
+
+.header {
+  background: #3d6b8a;
+  color: #fff;
+  padding: 24px 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.header h1 { margin: 0 0 8px; font-size: 22px; }
+.header p { margin: 0; opacity: 0.9; font-size: 14px; }
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1f35;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* 步骤条 */
+.steps {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  padding: 0 30px;
+}
+.step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  right: -30px;
+  width: 60px;
+  height: 2px;
+  background: #e0e0e0;
+}
+.step.active:not(:last-child)::after { background: #4facfe; }
+.step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.step.active .step-num { background: #4facfe; }
+.step-text { font-size: 12px; color: #8c8c8c; }
+.step.active .step-text { color: #4facfe; font-weight: 500; }
+
+/* 资产搜索 */
+.search-box { margin-bottom: 16px; }
+.asset-result {
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 12px;
+}
+.asset-result.error {
+  background: #fff1f0;
+  border-color: #ffa39e;
+}
+.asset-result .asset-no { font-size: 18px; font-weight: 600; color: #1a1f35; margin-bottom: 8px; }
+.asset-result .asset-info { font-size: 14px; color: #595959; line-height: 1.8; }
+
+/* 表单 */
+.form-row { display: flex; gap: 16px; margin-bottom: 16px; }
+.form-row .el-form-item { flex: 1; margin-bottom: 0; }
+@media (max-width: 600px) {
+  .form-row { flex-direction: column; gap: 0; }
+  .form-row .el-form-item { margin-bottom: 16px; }
+}
+@media (max-width: 768px) {
+  html, body { overflow-x: hidden; max-width: 100vw; }
+  .app-container { padding: 12px; max-width: 100%; }
+}
+
+/* 照片上传 */
+.photo-upload {
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.photo-upload:hover { border-color: #4facfe; }
+.photo-upload.has-files { border-color: #52c41a; background: #f6ffed; }
+.photo-upload .upload-icon { font-size: 32px; color: #bfbfbf; margin-bottom: 8px; }
+.photo-upload .upload-text { color: #595959; font-size: 14px; }
+.photo-upload .upload-hint { color: #8c8c8c; font-size: 12px; margin-top: 4px; }
+
+.photo-preview-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.photo-preview-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+.photo-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.photo-preview-item .remove-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 提交按钮 */
+.submit-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  border-radius: 8px;
+}
+
+/* 底部导航 */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0;
+  z-index: 100;
+}
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 16px;
+  color: #8c8c8c;
+  text-decoration: none;
+  font-size: 12px;
+}
+.bottom-nav-item.active { color: #4facfe; }
+.bottom-nav-item .icon { font-size: 20px; margin-bottom: 2px; }
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #4facfe;
+  text-decoration: none;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+.back-link:hover { opacity: 0.8; }
+
+/* 成功提示 */
+.success-box {
+  text-align: center;
+  padding: 40px 20px;
+}
+.success-box .success-icon {
+  width: 80px;
+  height: 80px;
+  background: #52c41a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  color: #fff;
+  margin: 0 auto 20px;
+}
+.success-box h2 { margin: 0 0 8px; color: #1a1f35; }
+.success-box p { margin: 0; color: #8c8c8c; }
+
+/* 故障描述 */
+.fault-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.fault-tag {
+  padding: 6px 12px;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.fault-tag:hover { background: #e6f7ff; border-color: #91caff; }
+.fault-tag.active { background: #4facfe; color: #fff; border-color: #4facfe; }
+</style>
+<script src="./auth-guard.js"></script>
+</head>
+<body>
+<div id="app">
+  <div class="app-container" style="padding-bottom: 80px;">
+    <a href="index.html" class="back-link" id="backLink" onclick="window.location.href='/main.html';return false;">← 返回首页</a>
+
+    <div class="header">
+      <h1>🔧 资产报修</h1>
+      <p>快速提交资产维修申请</p>
+    </div>
+
+    <!-- 步骤条 -->
+    <div class="steps">
+      <div class="step" :class="{active: step>=1}">
+        <div class="step-num">1</div>
+        <div class="step-text">选择资产</div>
+      </div>
+      <div class="step" :class="{active: step>=2}">
+        <div class="step-num">2</div>
+        <div class="step-text">填写故障</div>
+      </div>
+      <div class="step" :class="{active: step>=3}">
+        <div class="step-num">3</div>
+        <div class="step-text">提交完成</div>
+      </div>
+    </div>
+
+    <!-- 步骤1: 选择资产 -->
+    <div v-if="step===1" class="card">
+      <div class="card-title">选择需要维修的资产</div>
+      <div class="search-box">
+        <el-input
+          v-model="searchQuery"
+          placeholder="输入资产编号、SN或关联人搜索"
+          size="large"
+          clearable
+          @keyup.enter="searchAsset"
+        >
+          <template #append>
+            <el-button @click="searchAsset">搜索</el-button>
+          </template>
+        </el-input>
+      </div>
+
+      <!-- 搜索结果 -->
+      <div v-if="searchResults.length > 0" style="margin-top: 12px;">
+        <div style="font-size: 14px; color: #8c8c8c; margin-bottom: 12px;">找到 {{ searchResults.length }} 个结果，请选择：</div>
+        <div v-for="asset in searchResults" :key="asset.id" class="asset-result" style="margin-bottom: 12px; cursor: pointer;" @click="confirmAsset(asset)">
+          <div class="asset-no">{{ asset.asset_no }}</div>
+          <div class="asset-info">
+            <div>类目：{{ getAssetTypeName(asset.category) }}</div>
+            <div>品牌型号：{{ asset.brand }} {{ asset.model }}</div>
+            <div>当前状态：<el-tag size="small" :type="statusType(asset.status)">{{ asset.status }}</el-tag></div>
+            <div>存放地：{{ asset.location }}</div>
+            <div>关联人：{{ asset.assignee || '-' }}</div>
+          </div>
+          <el-button type="primary" style="margin-top: 12px; width: 100%;" @click.stop="confirmAsset(asset)">
+            选择此资产
+          </el-button>
+        </div>
+      </div>
+      <div v-else-if="searched && searchResults.length === 0" class="asset-result error">
+        <div style="text-align: center; color: #ff4d4f;">
+          <div style="font-size: 24px; margin-bottom: 8px;">😕</div>
+          <div>未找到匹配的资产</div>
+        </div>
+      </div>
+
+      <!-- 最近报修记录（仅在无搜索时显示） -->
+      <div v-if="!searched" style="margin-top: 20px;">
+        <div style="font-size: 14px; color: #8c8c8c; margin-bottom: 12px;">最近报修记录</div>
+        <div v-for="log in recentRepairs" :key="log.id" style="padding: 12px; background: #fafafa; border-radius: 8px; margin-bottom: 8px; font-size: 13px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <strong>{{ log.asset_no }}</strong>
+            <el-tag size="small" :type="repairStatusType(log.repair_status)">{{ log.repair_status }}</el-tag>
+          </div>
+          <div style="color: #595959; margin-bottom: 4px;">{{ log.fault_desc?.slice(0,30) }}...</div>
+          <div style="color: #8c8c8c;">{{ log.submit_time?.slice(0,16) }} · {{ log.submit_by }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 步骤2: 填写故障信息 -->
+    <div v-if="step===2" class="card">
+      <div class="card-title">填写故障信息</div>
+
+      <!-- 资产信息摘要 -->
+      <div class="asset-result" style="margin-bottom: 20px;">
+        <div class="asset-no">{{ selectedAsset?.asset_no }}</div>
+        <div class="asset-info">
+          <div>{{ selectedAsset?.category }} {{ selectedAsset?.brand }} {{ selectedAsset?.model }}</div>
+          <div>当前状态：{{ selectedAsset?.status }}</div>
+        </div>
+      </div>
+
+      <el-form :model="form" label-position="top">
+        <el-form-item label="故障描述" required>
+          <!-- 快捷标签 -->
+          <div class="fault-tags">
+            <span
+              v-for="tag in faultTags"
+              :key="tag"
+              class="fault-tag"
+              :class="{active: form.fault_desc?.includes(tag)}"
+              @click="addFaultTag(tag)"
+            >{{ tag }}</span>
+          </div>
+          <el-input
+            v-model="form.fault_desc"
+            type="textarea"
+            :rows="4"
+            placeholder="请详细描述故障现象，如：无法开机、屏幕花屏、键盘失灵等"
+          />
+        </el-form-item>
+
+        <el-form-item label="维修商">
+          <el-input v-model="form.repair_vendor" placeholder="可选：指定维修服务商"/>
+        </el-form-item>
+
+        <el-form-item label="提交人" required>
+          <el-input v-model="form.submit_by" placeholder="输入您的姓名"/>
+        </el-form-item>
+
+        <el-form-item label="备注">
+          <el-input v-model="form.repair_notes" type="textarea" :rows="2" placeholder="可选：补充说明"/>
+        </el-form-item>
+
+        <!-- 照片上传 -->
+        <el-form-item label="故障照片（必填）" required>
+          <div class="photo-upload" :class="{'has-files': photos.length>0}" @click="selectPhotos">
+            <div class="upload-icon">📷</div>
+            <div class="upload-text">点击上传故障照片</div>
+            <div class="upload-hint">请拍摄故障部位照片，最多 5 张</div>
+          </div>
+          <input type="file" ref="fileInput" multiple accept="image/*" style="display: none;" @change="handleFileChange">
+
+          <div class="photo-preview-list" v-if="photos.length>0">
+            <div class="photo-preview-item" v-for="(photo, idx) in photos" :key="idx">
+              <img :src="photo.preview" alt="preview">
+              <button class="remove-btn" @click.stop="removePhoto(idx)">×</button>
+            </div>
+          </div>
+        </el-form-item>
+      </el-form>
+
+      <div style="display: flex; gap: 12px;">
+        <el-button style="flex: 1;" @click="step=1">上一步</el-button>
+        <el-button type="primary" style="flex: 2;" class="submit-btn" :loading="submitting" @click="submit">
+          提交报修申请
+        </el-button>
+      </div>
+    </div>
+
+    <!-- 步骤3: 成功页面 -->
+    <div v-if="step===3" class="card">
+      <div class="success-box">
+        <div class="success-icon">✓</div>
+        <h2>报修申请已提交</h2>
+        <p>维修单已创建，飞书通知已发送给相关人员</p>
+        <el-button type="primary" style="margin-top: 24px; width: 200px;" @click="reset">
+          继续报修
+        </el-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部导航 -->
+  <nav class="bottom-nav">
+    <a href="stock.html" class="bottom-nav-item">
+      <span class="icon">📦</span>
+      <span>出入库</span>
+    </a>
+    <a href="repair.html" class="bottom-nav-item active">
+      <span class="icon">🔧</span>
+      <span>报修</span>
+    </a>
+    <a href="dispose.html" class="bottom-nav-item">
+      <span class="icon">🗑️</span>
+      <span>处理</span>
+    </a>
+    <a href="index.html" class="bottom-nav-item" onclick="window.location.href='/main.html';return false;">
+      <span class="icon">🏠</span>
+      <span>首页</span>
+    </a>
+  </nav>
+</div>
+
+<script>
+const { createApp, ref, reactive, onMounted } = Vue;
+const API = '/api';
+
+createApp({
+  setup() {
+    const step = ref(1);
+    const form = reactive({
+      asset_id: '',
+      fault_desc: '',
+      repair_vendor: '',
+      submit_by: '',
+      repair_notes: ''
+    });
+    const searchQuery = ref('');
+    const searchResults = ref([]);
+    const searched = ref(false);
+    const selectedAsset = ref(null);
+    const recentRepairs = ref([]);
+    const photos = ref([]);
+    const fileInput = ref(null);
+    const submitting = ref(false);
+    const meta = reactive({ asset_types: [] });
+
+    const faultTags = ['无法开机', '屏幕故障', '键盘失灵', '触摸板问题', '网络连接', '电池问题', '系统崩溃', '硬件损坏', '其他故障'];
+
+    // 获取资产类型名称
+    function getAssetTypeName(code) {
+      const type = meta.asset_types.find(t => t.code === code);
+      return type ? type.name : code;
+    }
+
+    async function loadMeta() {
+      const r = await fetch(`${API}/meta`).then(r => r.json());
+      Object.assign(meta, r);
+    }
+
+    async function searchAsset() {
+      // scope=all 跳过权限隔离，报修需要看到任意员工名下的资产
+      const kw = searchQuery.value.trim();
+      searched.value = !!kw;
+      const url = kw
+        ? `${API}/assets?q=${encodeURIComponent(kw)}&page_size=20&scope=all`
+        : `${API}/assets?page_size=20&scope=all`;
+      const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('ams_token') || '') } }).then(r => r.json());
+      searchResults.value = res.data || [];
+    }
+
+    function confirmAsset(asset) {
+      selectedAsset.value = asset;
+      form.asset_id = asset.id;
+      step.value = 2;
+    }
+
+    function addFaultTag(tag) {
+      if (!form.fault_desc) {
+        form.fault_desc = tag;
+      } else if (!form.fault_desc.includes(tag)) {
+        form.fault_desc += '，' + tag;
+      }
+    }
+
+    function selectPhotos() {
+      fileInput.value?.click();
+    }
+
+    function handleFileChange(e) {
+      const files = Array.from(e.target.files);
+      if (photos.value.length + files.length > 5) {
+        ElementPlus.ElMessage.warning('最多只能上传5张照片');
+        return;
+      }
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          photos.value.push({ file, preview: e.target.result });
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function removePhoto(idx) {
+      photos.value.splice(idx, 1);
+    }
+
+    async function submit() {
+      if (!form.fault_desc) {
+        ElementPlus.ElMessage.warning('请填写故障描述');
+        return;
+      }
+      if (!form.submit_by) {
+        ElementPlus.ElMessage.warning('请填写提交人');
+        return;
+      }
+      if (photos.value.length === 0) {
+        ElementPlus.ElMessage.warning('请至少上传一张故障照片');
+        return;
+      }
+
+      submitting.value = true;
+      const formData = new FormData();
+      Object.keys(form).forEach(key => {
+        if (form[key]) formData.append(key, form[key]);
+      });
+      photos.value.forEach(p => {
+        formData.append('photos', p.file);
+      });
+
+      try {
+        const res = await fetch(`${API}/quick/repair`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (res.ok) {
+          step.value = 3;
+        } else {
+          ElementPlus.ElMessage.error(data.error || '提交失败');
+        }
+      } catch (e) {
+        ElementPlus.ElMessage.error('网络错误');
+      }
+      submitting.value = false;
+    }
+
+    function reset() {
+      step.value = 1;
+      form.asset_id = '';
+      form.fault_desc = '';
+      form.repair_vendor = '';
+      form.submit_by = '';
+      form.repair_notes = '';
+      searchQuery.value = '';
+      searchResults.value = [];
+      searched.value = false;
+      selectedAsset.value = null;
+      photos.value = [];
+      loadRecentRepairs();
+    }
+
+    function statusType(status) {
+      return { '在库': 'success', '在用': 'primary', '维修中': 'warning', '已报废': 'danger' }[status] || 'info';
+    }
+
+    function repairStatusType(status) {
+      return { '待处理': 'warning', '维修中': 'primary', '已完成': 'success', '无法修复': 'danger' }[status] || 'info';
+    }
+
+    async function loadRecentRepairs() {
+      const r = await fetch(`${API}/repair?page_size=5`).then(r => r.json());
+      recentRepairs.value = r.data || [];
+    }
+
+    onMounted(() => {
+      loadMeta();
+      loadRecentRepairs();
+    });
+
+    return {
+      step, form, searchQuery, searchResults, searched, selectedAsset,
+      recentRepairs, photos, fileInput, submitting, faultTags, getAssetTypeName,
+      searchAsset, confirmAsset, addFaultTag, selectPhotos,
+      handleFileChange, removePhoto, submit, reset,
+      statusType, repairStatusType
+    };
+  }
+}).use(ElementPlus, { locale: ElementPlusLocaleZhCn }).mount('#app');
+</script>
+</body>
+</html>

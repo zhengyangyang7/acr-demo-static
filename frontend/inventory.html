@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<script src="./ams-role.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>资产盘点 - 企业资产管理系统</title>
+<link rel="stylesheet" href="./lib/element-plus.index.css">
+<script src="./lib/vue.global.prod.js"></script>
+<script src="./lib/element-plus.index.full.min.js"></script>
+<script src="./lib/element-plus-zh-cn.min.js"></script>
+<script src="./ams-ep-zh.js"></script>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f0f2f5; }
+.app-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+/* 头部 */
+.header {
+  background: #1a6b5c;
+  color: #fff;
+  padding: 24px 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.header h1 { margin: 0 0 8px; font-size: 22px; }
+.header p { margin: 0; opacity: 0.9; font-size: 14px; }
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #1a6b5c;
+  text-decoration: none;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+.back-link:hover { opacity: 0.8; }
+
+/* 卡片 */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1f35;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* 统计卡片 */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.stat-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.stat-box .value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a6b5c;
+}
+.stat-box .label {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 4px;
+}
+.stat-box.success .value { color: #52c41a; }
+.stat-box.warning .value { color: #faad14; }
+.stat-box.danger .value { color: #ff4d4f; }
+
+/* 任务列表 */
+.task-item {
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border-left: 4px solid #1a6b5c;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.task-item:hover { background: #f0f0f0; }
+.task-item.pending { border-left-color: #faad14; }
+.task-item.ongoing { border-left-color: #1a6b5c; }
+.task-item.completed { border-left-color: #52c41a; }
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.task-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1f35;
+}
+.task-meta {
+  font-size: 13px;
+  color: #8c8c8c;
+  line-height: 1.8;
+}
+.task-progress {
+  margin-top: 12px;
+}
+
+/* 盘点操作区 */
+.scan-area {
+  background: #1a6b5c;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  color: #fff;
+  margin-bottom: 20px;
+}
+.scan-area h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+.scan-input {
+  display: flex;
+  gap: 12px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+.scan-input .el-input { flex: 1; }
+.scan-input .el-input__wrapper {
+  background: rgba(255,255,255,0.9);
+}
+
+/* 资产卡片 */
+.asset-check-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid #e8e8e8;
+  transition: all 0.2s;
+}
+.asset-check-card:hover {
+  border-color: #1a6b5c;
+  box-shadow: 0 2px 8px rgba(26,107,92,0.16);
+}
+.asset-check-card.checked {
+  border-color: #52c41a;
+  background: #f6ffed;
+}
+.asset-check-card.abnormal {
+  border-color: #ff4d4f;
+  background: #fff2f0;
+}
+.asset-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.asset-no {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1f35;
+}
+.asset-info {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+}
+.asset-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #8c8c8c;
+}
+.empty-state .icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+/* 报告样式 */
+.report-section {
+  margin-bottom: 24px;
+}
+.report-section h4 {
+  font-size: 14px;
+  color: #1a1f35;
+  margin-bottom: 12px;
+  padding-left: 8px;
+  border-left: 3px solid #1a6b5c;
+}
+.abnormal-item {
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.abnormal-item .title {
+  font-weight: 600;
+  color: #ff4d4f;
+  margin-bottom: 4px;
+}
+.abnormal-item .desc {
+  font-size: 13px;
+  color: #666;
+}
+.table-scroll { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media (max-width: 768px) {
+  html, body { overflow-x: hidden; max-width: 100vw; }
+  .app-container { padding: 12px; max-width: 100%; }
+  .header { padding: 16px; }
+  .header h1 { font-size: 18px; }
+  .card { padding: 14px; overflow-x: auto; }
+  .el-dialog { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; margin: 12px auto !important; }
+}
+</style>
+<script src="./auth-guard.js"></script>
+</head>
+<body>
+<div id="app">
+  <div class="app-container">
+    <a href="index.html" class="back-link">← 返回首页</a>
+    
+    <div class="header">
+      <h1>📦 资产盘点</h1>
+      <p>定期盘点确保资产账实相符</p>
+    </div>
+
+    <!-- 任务列表视图 -->
+    <div v-if="currentView === 'list'">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div class="card-title" style="margin:0;border:0;padding:0;">盘点任务</div>
+          <el-button type="primary" @click="showCreateDialog">+ 新建盘点</el-button>
+        </div>
+        
+        <div v-if="tasks.length">
+          <div v-for="task in tasks" :key="task.id" 
+               class="task-item" 
+               :class="task.status"
+               @click="openTask(task)">
+            <div class="task-header">
+              <span class="task-title">{{ task.task_name }}</span>
+              <el-tag :type="taskStatusType(task.status)" size="small">{{ taskStatusText(task.status) }}</el-tag>
+            </div>
+            <div class="task-meta">
+              <div>单号：{{ task.task_no }} | 创建人：{{ task.created_by }}</div>
+              <div>范围：{{ scopeText(task.scope_type, task.scope_value) }} | 创建时间：{{ task.created_at?.slice(0,16) }}</div>
+            </div>
+            <div class="task-progress" v-if="task.status === 'ongoing'">
+              <el-progress :percentage="taskProgress(task)" :status="taskProgress(task) === 100 ? 'success' : ''"/>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty-state">
+          <div class="icon">📋</div>
+          <p>暂无盘点任务</p>
+          <el-button type="primary" @click="showCreateDialog">创建首个盘点任务</el-button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 盘点详情视图 -->
+    <div v-if="currentView === 'detail' && currentTask">
+      <!-- 统计卡片 -->
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="value">{{ currentTask.total_count || 0 }}</div>
+          <div class="label">应盘总数</div>
+        </div>
+        <div class="stat-box success">
+          <div class="value">{{ taskStats.normal || 0 }}</div>
+          <div class="label">正常</div>
+        </div>
+        <div class="stat-box warning">
+          <div class="value">{{ taskStats.pending || 0 }}</div>
+          <div class="label">待盘点</div>
+        </div>
+        <div class="stat-box danger">
+          <div class="value">{{ (taskStats.abnormal || 0) + (taskStats.missing || 0) }}</div>
+          <div class="label">异常</div>
+        </div>
+      </div>
+
+      <!-- 扫码盘点区 -->
+      <div class="scan-area" v-if="currentTask.status === 'ongoing'">
+        <h3>🔍 扫码盘点</h3>
+        <div class="scan-input">
+          <el-input 
+            v-model="scanInput" 
+            placeholder="扫描资产条码或输入资产编号"
+            size="large"
+            @keyup.enter="handleScan"
+            ref="scanInputRef"
+          />
+          <el-button type="primary" size="large" @click="handleScan">确认</el-button>
+        </div>
+      </div>
+
+      <!-- 筛选标签 -->
+      <div class="card">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>盘点明细</span>
+          <el-radio-group v-model="itemFilter" size="small">
+            <el-radio-button label="all">全部</el-radio-button>
+            <el-radio-button label="pending">待盘点</el-radio-button>
+            <el-radio-button label="normal">正常</el-radio-button>
+            <el-radio-button label="abnormal">异常</el-radio-button>
+            <el-radio-button label="need_confirm">需确认</el-radio-button>
+          </el-radio-group>
+        </div>
+
+        <!-- 资产列表 -->
+        <div v-if="filteredItems.length">
+          <div v-for="item in filteredItems" :key="item.id" 
+               class="asset-check-card"
+               :class="item.check_status">
+            <div class="asset-header">
+              <span class="asset-no">{{ item.asset_no }}</span>
+              <el-tag :type="checkStatusType(item.check_status)" size="small">
+                {{ checkStatusText(item.check_status) }}
+              </el-tag>
+            </div>
+            <div class="asset-info">
+              <div>{{ formatAssetInfo(item.asset_info) }}</div>
+              <div style="margin-top:4px;color:#999;">
+                位置：{{ item.before_location || '未设置' }} | 
+                责任人：{{ item.before_assignee || '无' }} |
+                状态：{{ item.before_status }}
+              </div>
+              <div v-if="item.abnormal_desc" style="margin-top:4px;color:#ff4d4f;">
+                ⚠️ {{ item.abnormal_desc }}
+              </div>
+              <div v-if="item.checked_by" style="margin-top:4px;color:#52c41a;">
+                ✓ {{ item.checked_by }} 于 {{ item.checked_at?.slice(0,16) }} 盘点
+              </div>
+            </div>
+            <div class="asset-actions" v-if="currentTask.status === 'ongoing' && item.check_status === 'pending'">
+              <el-button v-if="!item.confirm_required" type="primary" size="small" @click="checkItem(item, 'normal')">
+                确认正常
+              </el-button>
+              <el-tag v-if="item.confirm_required" type="warning" size="small" style="margin-right:8px">
+                等待责任人确认
+              </el-tag>
+              <el-button type="danger" size="small" @click="showAbnormalDialog(item)">
+                标记异常
+              </el-button>
+            </div>
+          </div>
+        </div>
+        <div v-else class="empty-state">
+          <p>暂无符合条件的资产</p>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:20px;" v-if="currentTask.status === 'ongoing'">
+        <el-button @click="currentView = 'list'">返回列表</el-button>
+        <el-button type="success" @click="showCompleteDialog">完成盘点</el-button>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:20px;" v-else>
+        <el-button @click="currentView = 'list'">返回列表</el-button>
+        <el-button type="primary" @click="showReport">查看报告</el-button>
+      </div>
+    </div>
+
+    <!-- 盘点报告视图 -->
+    <div v-if="currentView === 'report' && reportData">
+      <div class="card">
+        <div class="card-title">盘点报告 - {{ reportData.task.task_name }}</div>
+        
+        <div class="report-section">
+          <h4>盘点概况</h4>
+          <el-descriptions :column="3" border>
+            <el-descriptions-item label="盘点单号">{{ reportData.task.task_no }}</el-descriptions-item>
+            <el-descriptions-item label="盘点范围">{{ scopeText(reportData.task.scope_type, reportData.task.scope_value) }}</el-descriptions-item>
+            <el-descriptions-item label="创建人">{{ reportData.task.created_by }}</el-descriptions-item>
+            <el-descriptions-item label="应盘数量">{{ reportData.stats.total }}</el-descriptions-item>
+            <el-descriptions-item label="正常">{{ reportData.stats.normal }}</el-descriptions-item>
+            <el-descriptions-item label="异常">{{ (reportData.stats.abnormal || 0) + (reportData.stats.missing || 0) }}</el-descriptions-item>
+          </el-descriptions>
+        </div>
+
+        <div class="report-section" v-if="reportData.abnormal_items.length">
+          <h4>异常资产 ({{ reportData.abnormal_items.length }})</h4>
+          <div v-for="item in reportData.abnormal_items" :key="item.id" class="abnormal-item">
+            <div class="title">{{ item.asset_no }} - {{ item.abnormal_type === 'missing' ? '盘亏' : '异常' }}</div>
+            <div class="desc">{{ formatAssetInfo(item.asset_info) }}</div>
+            <div class="desc" v-if="item.abnormal_desc">{{ item.abnormal_desc }}</div>
+          </div>
+        </div>
+
+        <div class="report-section" v-if="reportData.pending_items.length">
+          <h4>未盘点资产 ({{ reportData.pending_items.length }})</h4>
+          <div class="table-scroll">
+          <el-table :data="reportData.pending_items" size="small" border>
+            <el-table-column prop="asset_no" label="资产编号" width="150"/>
+            <el-table-column label="资产信息">
+              <template #default="{row}">{{ formatAssetInfo(row.asset_info) }}</template>
+            </el-table-column>
+            <el-table-column prop="before_location" label="位置" width="120"/>
+            <el-table-column prop="before_assignee" label="责任人" width="120"/>
+          </el-table>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:20px;">
+        <el-button @click="currentView = 'list'">返回列表</el-button>
+        <el-button type="primary" @click="printReport">打印报告</el-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 创建盘点任务弹窗 -->
+  <el-dialog v-model="createDialog.visible" title="新建盘点任务" width="500px">
+    <el-form :model="createDialog.form" label-width="100px">
+      <el-form-item label="任务名称" required>
+        <el-input v-model="createDialog.form.task_name" placeholder="如：2024年第一季度盘点"/>
+      </el-form-item>
+      <el-form-item label="盘点范围" required>
+        <el-radio-group v-model="createDialog.form.scope_type">
+          <el-radio label="in_stock">仅库存资产</el-radio>
+          <el-radio label="all">全部资产</el-radio>
+          <el-radio label="location">指定位置</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item label="位置" v-if="createDialog.form.scope_type === 'location'">
+        <el-input v-model="createDialog.form.scope_value" placeholder="输入存放位置"/>
+      </el-form-item>
+      <el-form-item label="备注">
+        <el-input v-model="createDialog.form.notes" type="textarea" :rows="2"/>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="createDialog.visible = false">取消</el-button>
+      <el-button type="primary" @click="createTask" :loading="createDialog.loading">创建</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- 标记异常弹窗 -->
+  <el-dialog v-model="abnormalDialog.visible" title="标记异常" width="420px">
+    <div style="margin-bottom:16px;">
+      <div><strong>{{ abnormalDialog.item?.asset_no }}</strong></div>
+      <div style="color:#666;font-size:13px;margin-top:4px;">
+        {{ formatAssetInfo(abnormalDialog.item?.asset_info) }}
+      </div>
+    </div>
+    <el-form :model="abnormalDialog.form" label-width="80px">
+      <el-form-item label="异常类型">
+        <el-select v-model="abnormalDialog.form.abnormal_type" style="width:100%">
+          <el-option label="位置不符" value="location_mismatch">
+            <span style="display:flex;align-items:center;gap:8px">
+              <span style="width:8px;height:8px;border-radius:50%;background:#fa8c16;flex-shrink:0"></span>位置不符
+            </span>
+          </el-option>
+          <el-option label="状态不符" value="status_mismatch">
+            <span style="display:flex;align-items:center;gap:8px">
+              <span style="width:8px;height:8px;border-radius:50%;background:#1677ff;flex-shrink:0"></span>状态不符
+            </span>
+          </el-option>
+          <el-option label="资产损坏" value="damaged">
+            <span style="display:flex;align-items:center;gap:8px">
+              <span style="width:8px;height:8px;border-radius:50%;background:#ff4d4f;flex-shrink:0"></span>资产损坏
+            </span>
+          </el-option>
+          <el-option label="盘亏" value="missing">
+            <span style="display:flex;align-items:center;gap:8px">
+              <span style="width:8px;height:8px;border-radius:50%;background:#cf1322;flex-shrink:0"></span>盘亏
+            </span>
+          </el-option>
+          <el-option label="其他" value="other">
+            <span style="display:flex;align-items:center;gap:8px">
+              <span style="width:8px;height:8px;border-radius:50%;background:#8c8c8c;flex-shrink:0"></span>其他
+            </span>
+          </el-option>
+        </el-select>
+      </el-form-item>
+      <el-form-item label="异常描述">
+        <el-input v-model="abnormalDialog.form.abnormal_desc" type="textarea" :rows="2" placeholder="请描述异常情况"/>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="abnormalDialog.visible = false">取消</el-button>
+      <el-button type="danger" @click="submitAbnormal">确认标记</el-button>
+    </template>
+  </el-dialog>
+
+  <!-- 完成盘点确认 -->
+  <el-dialog v-model="completeDialog.visible" title="完成盘点" width="420px">
+    <p>确定要完成本次盘点吗？</p>
+    <p style="color:#999;font-size:13px;margin-top:8px;">
+      完成后将生成盘点报告，未盘点的资产将标记为异常。
+    </p>
+    <template #footer>
+      <el-button @click="completeDialog.visible = false">取消</el-button>
+      <el-button type="success" @click="completeTask">确认完成</el-button>
+    </template>
+  </el-dialog>
+</div>
+
+<script>
+const { createApp, ref, reactive, computed, onMounted, nextTick } = Vue;
+const API = '/api';
+
+createApp({
+  setup() {
+    const currentView = ref('list'); // list/detail/report
+    const tasks = ref([]);
+    const currentTask = ref(null);
+    const taskStats = ref({});
+    const items = ref([]);
+    const itemFilter = ref('all');
+    const scanInput = ref('');
+    const scanInputRef = ref(null);
+    const reportData = ref(null);
+
+    function authHeaders(extra) {
+      return Object.assign({
+        'Authorization': 'Bearer ' + (localStorage.getItem('ams_token') || '')
+      }, extra || {});
+    }
+    function currentOperator() {
+      try {
+        const u = JSON.parse(localStorage.getItem('ams_user') || '{}');
+        if (u && u.name) return u.name;
+      } catch (e) {}
+      return '管理员';
+    }
+
+    // 弹窗状态
+    const createDialog = reactive({
+      visible: false,
+      loading: false,
+      form: { task_name: '', scope_type: 'in_stock', scope_value: '', notes: '' }
+    });
+
+    const abnormalDialog = reactive({
+      visible: false,
+      item: null,
+      form: { abnormal_type: 'location_mismatch', abnormal_desc: '' }
+    });
+
+    const completeDialog = reactive({
+      visible: false
+    });
+
+    // 计算属性：筛选后的资产列表
+    const filteredItems = computed(() => {
+      if (itemFilter.value === 'all') return items.value;
+      if (itemFilter.value === 'need_confirm') {
+        return items.value.filter(i => i.confirm_required === 1 && i.check_status === 'pending');
+      }
+      return items.value.filter(i => i.check_status === itemFilter.value);
+    });
+
+    // 任务进度
+    function taskProgress(task) {
+      if (!task.total_count) return 0;
+      const checked = task.checked_count || 0;
+      return Math.round((checked / task.total_count) * 100);
+    }
+
+    // 状态转换
+    function taskStatusType(status) {
+      return { pending: 'warning', ongoing: 'primary', completed: 'success', cancelled: 'info' }[status] || 'info';
+    }
+    function taskStatusText(status) {
+      return { pending: '待开始', ongoing: '盘点中', completed: '已完成', cancelled: '已取消' }[status] || status;
+    }
+    function checkStatusType(status) {
+      return { pending: 'info', normal: 'success', abnormal: 'danger', missing: 'danger' }[status] || 'info';
+    }
+    function checkStatusText(status) {
+      return { pending: '待盘点', normal: '正常', abnormal: '异常', missing: '盘亏' }[status] || status;
+    }
+    function scopeText(type, value) {
+      const map = { in_stock: '仅库存资产', all: '全部资产', location: `指定位置：${value || ''}` };
+      return map[type] || type;
+    }
+
+    // 格式化资产信息
+    function formatAssetInfo(infoJson) {
+      if (!infoJson) return '-';
+      try {
+        const info = typeof infoJson === 'string' ? JSON.parse(infoJson) : infoJson;
+        return `${info.category || ''} ${info.brand || ''} ${info.model || ''}`.trim() || '-';
+      } catch {
+        return infoJson;
+      }
+    }
+
+    // 加载任务列表
+    async function loadTasks() {
+      const r = await fetch(`${API}/inventory/tasks`).then(r => r.json());
+      if (r.success) tasks.value = r.data;
+    }
+
+    // 打开任务详情
+    async function openTask(task) {
+      currentTask.value = task;
+      currentView.value = 'detail';
+      itemFilter.value = 'all';
+      await loadTaskDetail(task.id);
+      await loadItems(task.id);
+      // 自动聚焦扫码输入
+      if (task.status === 'ongoing') {
+        nextTick(() => scanInputRef.value?.focus());
+      }
+    }
+
+    // 加载任务详情
+    async function loadTaskDetail(taskId) {
+      const r = await fetch(`${API}/inventory/tasks/${taskId}`).then(r => r.json());
+      if (r.success) {
+        currentTask.value = r.task;
+        taskStats.value = r.task.stats || {};
+      }
+    }
+
+    // 加载盘点明细
+    async function loadItems(taskId) {
+      const r = await fetch(`${API}/inventory/tasks/${taskId}/items`).then(r => r.json());
+      if (r.success) items.value = r.data;
+    }
+
+    // 显示创建弹窗
+    function showCreateDialog() {
+      createDialog.form = { task_name: '', scope_type: 'in_stock', scope_value: '', notes: '' };
+      createDialog.visible = true;
+    }
+
+    // 创建任务
+    async function createTask() {
+      if (!createDialog.form.task_name.trim()) {
+        ElementPlus.ElMessage.warning('请输入任务名称');
+        return;
+      }
+      createDialog.loading = true;
+      try {
+        const r = await fetch(`${API}/inventory/tasks`, {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            ...createDialog.form,
+            created_by: currentOperator()
+          })
+        }).then(r => r.json());
+        
+        if (r.success) {
+          ElementPlus.ElMessage.success('盘点任务创建成功');
+          createDialog.visible = false;
+          await loadTasks();
+          // 自动打开新创建的任务
+          openTask(r.task);
+        } else {
+          ElementPlus.ElMessage.error(r.error || '创建失败');
+        }
+      } finally {
+        createDialog.loading = false;
+      }
+    }
+
+    // 扫码处理
+    async function handleScan() {
+      const code = scanInput.value.trim();
+      if (!code) return;
+      
+      // 查找匹配的资产
+      const item = items.value.find(i => i.asset_no === code && i.check_status === 'pending');
+      if (!item) {
+        ElementPlus.ElMessage.warning('未找到待盘点的资产，请检查编号');
+        scanInput.value = '';
+        return;
+      }
+      
+      // 执行盘点
+      await checkItem(item, 'scan');
+      scanInput.value = '';
+      scanInputRef.value?.focus();
+    }
+
+    // 盘点资产
+    async function checkItem(item, method) {
+      try {
+        const r = await fetch(`${API}/inventory/items/${item.id}/check`, {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            check_method: method,
+            checked_by: currentOperator()
+          })
+        }).then(r => r.json());
+        
+        if (r.success) {
+          ElementPlus.ElMessage.success('盘点完成');
+          await loadItems(currentTask.value.id);
+          await loadTaskDetail(currentTask.value.id);
+        } else {
+          ElementPlus.ElMessage.error(r.error || '盘点失败');
+        }
+      } catch (e) {
+        ElementPlus.ElMessage.error('网络错误');
+      }
+    }
+
+    // 显示异常弹窗
+    function showAbnormalDialog(item) {
+      abnormalDialog.item = item;
+      abnormalDialog.form = { abnormal_type: 'location_mismatch', abnormal_desc: '' };
+      abnormalDialog.visible = true;
+    }
+
+    // 提交异常
+    async function submitAbnormal() {
+      if (!abnormalDialog.form.abnormal_desc.trim()) {
+        ElementPlus.ElMessage.warning('请填写异常描述');
+        return;
+      }
+      try {
+        const r = await fetch(`${API}/inventory/items/${abnormalDialog.item.id}/abnormal`, {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            abnormal_type: abnormalDialog.form.abnormal_type,
+            abnormal_desc: abnormalDialog.form.abnormal_desc,
+            checked_by: currentOperator()
+          })
+        }).then(r => r.json());
+        if (r.success) {
+          ElementPlus.ElMessage.success(r.check_status === 'missing' ? '已标记盘亏' : '已标记异常');
+          abnormalDialog.visible = false;
+          await loadItems(currentTask.value.id);
+          await loadTaskDetail(currentTask.value.id);
+        } else {
+          ElementPlus.ElMessage.error(r.error || '标记失败');
+        }
+      } catch (e) {
+        ElementPlus.ElMessage.error('网络错误');
+      }
+    }
+
+    // 显示完成确认
+    function showCompleteDialog() {
+      completeDialog.visible = true;
+    }
+
+    // 完成任务
+    async function completeTask() {
+      try {
+        const r = await fetch(`${API}/inventory/tasks/${currentTask.value.id}/complete`, {
+          method: 'POST'
+        }).then(r => r.json());
+        
+        if (r.success) {
+          ElementPlus.ElMessage.success('盘点任务已完成');
+          completeDialog.visible = false;
+          await loadTaskDetail(currentTask.value.id);
+        } else {
+          ElementPlus.ElMessage.error(r.error || '操作失败');
+        }
+      } catch (e) {
+        ElementPlus.ElMessage.error('网络错误');
+      }
+    }
+
+    // 显示报告
+    async function showReport() {
+      const r = await fetch(`${API}/inventory/tasks/${currentTask.value.id}/report`).then(r => r.json());
+      if (r.success) {
+        reportData.value = r;
+        currentView.value = 'report';
+      }
+    }
+
+    // 打印报告
+    function printReport() {
+      window.print();
+    }
+
+    onMounted(() => {
+      loadTasks();
+    });
+
+    return {
+      currentView, tasks, currentTask, taskStats, items, itemFilter,
+      filteredItems, scanInput, scanInputRef, reportData,
+      createDialog, abnormalDialog, completeDialog,
+      taskProgress, taskStatusType, taskStatusText, checkStatusType, checkStatusText, scopeText,
+      formatAssetInfo, loadTasks, openTask, showCreateDialog, createTask,
+      handleScan, checkItem, showAbnormalDialog, submitAbnormal,
+      showCompleteDialog, completeTask, showReport, printReport
+    };
+  }
+}).use(ElementPlus, { locale: ElementPlusLocaleZhCn }).mount('#app');
+</script>
+</body>
+</html>

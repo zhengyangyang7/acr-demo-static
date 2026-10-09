@@ -1,0 +1,11 @@
+# 依赖版本锁定（安全加固 P2-6：防止依赖漂移引入未验证版本/已知 CVE）。
+# 说明：pandas 在 backend/app.py、database.py 中均未被 import（Excel 导入用 openpyxl），
+#       属死依赖，已移除（根治无用依赖、收敛供应链面、减小镜像体积）。
+# flask/flask-cors/openpyxl/requests 锁定至本地回归测试验证通过的版本；
+# gunicorn 为生产 WSGI 运行依赖，锁定主版本范围保证可复现构建且兼容 python:3.10。
+flask==3.1.3
+flask-cors==6.0.5
+openpyxl==3.1.5
+gunicorn>=22,<24
+requests==2.34.2
+pytest>=8,<9

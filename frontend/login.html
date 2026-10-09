@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<script src="./ams-role.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>超管登录 - 企业资产管理系统</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: #1a6b5c;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.login-container {
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+}
+.login-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+@media (max-width: 480px) {
+  .login-container { padding: 16px; }
+  .login-card { padding: 28px 20px; }
+  .login-title { font-size: 20px; }
+}
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.login-logo {
+  width: 64px;
+  height: 64px;
+  background: #1a6b5c;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 28px;
+}
+.login-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a1f35;
+  margin-bottom: 8px;
+}
+.login-subtitle {
+  font-size: 14px;
+  color: #8c8c8c;
+}
+.form-group {
+  margin-bottom: 16px;
+}
+.input-wrap {
+  position: relative;
+}
+.input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #bfbfbf;
+  font-size: 16px;
+  pointer-events: none;
+  line-height: 1;
+}
+.form-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 40px 0 38px;
+  border: 1px solid #dcdfe6;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #303133;
+  outline: none;
+  transition: border-color .2s;
+  background: #fff;
+}
+.form-input:focus {
+  border-color: #1a6b5c;
+  box-shadow: 0 0 0 2px rgba(26,107,92,.2);
+}
+.form-input::placeholder { color: #c0c4cc; }
+.toggle-pw {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #c0c4cc;
+  font-size: 16px;
+  line-height: 1;
+  user-select: none;
+}
+.toggle-pw:hover { color: #909399; }
+.error-msg {
+  display: none;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #ff4d4f;
+}
+.error-msg.show { display: block; }
+.login-btn {
+  width: 100%;
+  height: 44px;
+  background: #1a6b5c;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity .2s, transform .1s;
+  margin-top: 4px;
+}
+.login-btn:hover { opacity: .9; }
+.login-btn:active { transform: scale(.98); }
+.login-btn:disabled { opacity: .6; cursor: not-allowed; }
+.login-btn .btn-text { display: inline-block; }
+.login-btn .btn-loading { display: none; }
+.login-btn.loading .btn-text { display: none; }
+.login-btn.loading .btn-loading { display: inline-block; }
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.login-tips {
+  margin-top: 24px;
+  padding: 12px 16px;
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #52c41a;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.lark-notice {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: #8c8c8c;
+}
+.lark-notice a {
+  color: #1a6b5c;
+  text-decoration: none;
+}
+.lark-notice a:hover { text-decoration: underline; }
+
+/* toast */
+.toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: #333;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  opacity: 0;
+  transition: all .3s;
+  pointer-events: none;
+  z-index: 9999;
+  white-space: nowrap;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.toast.success { background: #52c41a; }
+.toast.error   { background: #ff4d4f; }
+.toast.info    { background: #1677ff; }
+</style>
+</head>
+<body>
+
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-logo">📦</div>
+      <div class="login-title">企业资产管理系统</div>
+      <div class="login-subtitle">账号密码登录</div>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <div class="form-group">
+      <div class="input-wrap">
+        <span class="input-icon">👤</span>
+        <input
+          class="form-input"
+          id="username"
+          type="text"
+          placeholder="请输入姓名或邮箱"
+          autocomplete="username"
+        />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="input-wrap">
+        <span class="input-icon">🔒</span>
+        <input
+          class="form-input"
+          id="password"
+          type="password"
+          placeholder="请输入密码"
+          autocomplete="current-password"
+        />
+        <span class="toggle-pw" id="togglePw" title="显示/隐藏密码">👁</span>
+      </div>
+    </div>
+
+    <button class="login-btn" id="loginBtn" onclick="handleLogin()">
+      <span class="btn-loading"><span class="spinner"></span>登录中...</span>
+      <span class="btn-text">登 录</span>
+    </button>
+
+    <div class="login-tips">
+      <span>ℹ️</span>
+      <span>管理角色登录后进入管理后台；普通员工进入个人门户。未设置密码的账号请联系超管重置。</span>
+    </div>
+
+    <div class="lark-notice">
+      普通员工？<a href="#" onclick="goToLark();return false;">在 Lark 中打开</a>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Toast ──────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, type = 'info') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = 'toast'; }, 2500);
+}
+
+// ── 显示/隐藏密码 ──────────────────────────────
+document.getElementById('togglePw').addEventListener('click', () => {
+  const pw = document.getElementById('password');
+  pw.type = pw.type === 'password' ? 'text' : 'password';
+});
+
+// ── 回车登录 ───────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleLogin();
+});
+
+// ── 错误提示 ───────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.className = 'error-msg show';
+}
+function clearError() {
+  document.getElementById('errorMsg').className = 'error-msg';
+}
+
+// ── 按钮 loading ───────────────────────────────
+function setLoading(v) {
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = v;
+  btn.className = 'login-btn' + (v ? ' loading' : '');
+}
+
+// ── 登录 ───────────────────────────────────────
+async function handleLogin() {
+  clearError();
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+
+  if (!username) { showError('请输入账号'); return; }
+  if (!password) { showError('请输入密码'); return; }
+  if (password.length < 4) { showError('密码至少4位'); return; }
+
+  setLoading(true);
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showToast('登录成功', 'success');
+      localStorage.setItem('ams_user', JSON.stringify(data.user));
+      localStorage.setItem('ams_token', data.token || '');
+      const role = data.user?.role || '';
+      const dest = pickLandingByRole(role);
+      setTimeout(() => { window.location.href = dest + '?t=' + Date.now(); }, 600);
+    } else {
+      showError(data.error || '账号或密码错误');
+    }
+  } catch (e) {
+    showError('网络错误，请稍后重试');
+  } finally {
+    setLoading(false);
+  }
+}
+
+// 页面加载时：验证已有 token，有效才按角色跳转首页（避免无效 token 循环 / 避免普通用户落到管理后台）
+const ADMIN_ROLES = (window.AMS_ADMIN_ROLES) || ['超管', '管理员', '普通管理员', '操作员', '财务'];
+function isAdminRole(role) {
+  return ADMIN_ROLES.includes(role);
+}
+
+// 取出"登录前想去的页面"（由 auth-guard.js 在拦截时写入），并做基本的开放重定向防护
+function takeRememberedRedirect(role) {
+  if (!isAdminRole(role)) return '';              // 非管理角色一律回个人门户，不信任记忆
+  var p = '';
+  try { p = sessionStorage.getItem('ams_redirect_after_login') || ''; } catch (e) { return ''; }
+  try { sessionStorage.removeItem('ams_redirect_after_login'); } catch (e) {}
+  // 仅允许站内绝对路径，禁止 //evil.com 这类协议相对 URL
+  if (!p || p.charAt(0) !== '/' || p.charAt(1) === '/') return '';
+  if (p.indexOf('/login.html') === 0) return '';
+  return p;
+}
+
+function pickLandingByRole(role) {
+  return takeRememberedRedirect(role) || (isAdminRole(role) ? '/main.html' : '/my.html');
+}
+(async function autoRedirect() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('clear')) {
+    // 强制清除模式
+    localStorage.removeItem('ams_token');
+    localStorage.removeItem('ams_user');
+    history.replaceState(null, '', '/login.html');
+    return;
+  }
+  const savedToken = localStorage.getItem('ams_token');
+  if (!savedToken) return;
+  // 异步验证 token 有效性
+  try {
+    const res = await fetch('/api/auth/check', {
+      headers: { 'Authorization': 'Bearer ' + savedToken }
+    });
+    const data = await res.json();
+    if (data.success && data.is_logged_in) {
+      const role = data.user?.role || '';
+      const dest = pickLandingByRole(role) + '?t=' + Date.now();
+      window.location.replace(dest);
+    } else {
+      // token 无效，清除并留在登录页
+      localStorage.removeItem('ams_token');
+      localStorage.removeItem('ams_user');
+    }
+  } catch (e) {
+    // 验证失败，清除并留在登录页
+    localStorage.removeItem('ams_token');
+    localStorage.removeItem('ams_user');
+  }
+})();
+
+// 显示 Lark 免登错误
+(function showLarkError(){
+  const params = new URLSearchParams(location.search);
+  const err = params.get('lark_err');
+  if (err) {
+    const el = document.createElement('div');
+    el.style.cssText = 'background:#fff1f0;border:1px solid #ffa39e;border-radius:8px;padding:12px 16px;margin:0 0 16px;color:#a8071a;font-size:14px;line-height:1.6;text-align:left';
+    var raw = err.replace(/</g, '&lt;');
+    var friendly = raw;
+    if (/\{/.test(raw) || /UNIQUE|Traceback|Exception|JSON|token|LARK_APP|status_code|docker-compose/i.test(raw)) {
+      friendly = '登录遇到问题，请从飞书工作台重新打开本系统；仍不行请联系管理员。';
+    }
+    el.innerHTML = '<strong style="display:block;margin-bottom:6px">登录未成功</strong>' + friendly;
+    const form = document.querySelector('.login-card') || document.body.firstChild;
+    if (form && form.parentNode) form.parentNode.insertBefore(el, form);
+  }
+})();
+
+
+function goToLark() {
+  showToast('请在 Lark（飞书）工作台中搜索并打开「资产管理」应用', 'info');
+}
+
+</script>
+</body>
+</html>

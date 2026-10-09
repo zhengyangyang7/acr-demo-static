@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<script src="./ams-role.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>操作日志 - 企业资产管理系统</title>
+<link rel="stylesheet" href="./lib/element-plus.index.css">
+<script src="./lib/vue.global.prod.js"></script>
+<script src="./lib/element-plus.index.full.min.js"></script>
+<script src="./lib/element-plus-zh-cn.min.js"></script>
+<script src="./ams-ep-zh.js"></script>
+<script src="./lib/element-plus-icons.iife.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f0f2f5; }
+
+.layout { display: flex; min-height: 100vh; }
+
+/* 侧边栏 */
+.sidebar {
+  width: 220px; height: 100vh; max-height: 100vh; background: #243038;
+  display: flex; flex-direction: column; position: fixed; left: 0; top: 0; z-index: 100;
+  box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+.sidebar-logo {
+  padding: 20px 16px 16px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-logo .logo-icon { width: 36px; height: 36px; background: #1a6b5c; border-radius: 8px;
+  display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.sidebar-logo .logo-text { color:#fff; font-size:14px; font-weight:600; line-height:1.3;}
+.sidebar-logo .logo-sub  { color:rgba(255,255,255,0.5); font-size:11px; }
+.nav-menu { flex:1; min-height: 0; padding: 8px 0; overflow-y: auto; }
+.nav-item, a.nav-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 20px;
+  color: rgba(255,255,255,0.65); cursor: pointer; font-size:13px;
+  border-radius: 0; transition: all 0.2s; margin: 1px 8px; border-radius: 8px;
+  font-family: inherit; text-decoration: none;
+}
+.nav-item:hover, a.nav-item:hover { color:#fff; background:rgba(255,255,255,0.08); }
+.nav-item.active, a.nav-item.active { color:#fff; background: rgba(26,107,92,0.72); }
+.nav-item .nav-icon { font-size: 16px; width:18px; text-align:center; }
+.nav-group-title { padding: 12px 20px 4px; color:rgba(255,255,255,0.3); font-size:11px; letter-spacing:1px; text-transform:uppercase; }
+
+/* 主体 */
+.main { margin-left: 220px; min-height: 100vh; display: flex; flex-direction: column; }
+.topbar { height: 56px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; padding: 0 24px; gap: 12px; position: sticky; top: 0; z-index: 50; }
+.topbar-title { font-size: 16px; font-weight: 600; color: #1a1f35; flex: 1; }
+.content { padding: 24px; flex: 1; }
+
+/* 卡片 */
+.card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); margin-bottom: 20px; }
+
+/* 筛选栏 */
+.filter-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+.filter-item { display: flex; align-items: center; gap: 8px; }
+.filter-label { font-size: 13px; color: #666; white-space: nowrap; }
+
+/* 日志表格 */
+.log-table { width: 100%; border-collapse: collapse; }
+.log-table thead tr { background: #f5f7fa; border-bottom: 2px solid #e8e8e8; }
+.log-table thead th {
+  padding: 12px 14px; font-size: 13px; font-weight: 600; color: #606266;
+  text-align: left; white-space: nowrap;
+}
+.log-table tbody tr {
+  border-bottom: 1px solid #f0f0f0; transition: background .15s;
+}
+.log-table tbody tr:hover { background: #f5f7ff; }
+.log-table tbody tr:last-child { border-bottom: none; }
+.log-table td {
+  padding: 12px 14px; font-size: 13px; color: #333; vertical-align: top;
+}
+
+/* 操作类型标签 */
+.action-tag {
+  display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;
+}
+.action-create  { background: #e6f7e6; color: #52c41a; }
+.action-update  { background: #e6f4ff; color: #1677ff; }
+.action-delete  { background: #fff1f0; color: #ff4d4f; }
+.action-approve { background: #f6ffed; color: #52c41a; }
+.action-reject  { background: #fff1f0; color: #ff4d4f; }
+.action-upload  { background: #fff7e6; color: #fa8c16; }
+.action-arrive  { background: #f6ffed; color: #52c41a; }
+.action-cancel  { background: #f5f5f5; color: #8c8c8c; }
+.action-apply   { background: #fff7e6; color: #fa8c16; }
+
+/* 模块标签 */
+.module-tag {
+  display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px;
+  background: #f0f1f5; color: #666;
+}
+.module-order    { background: #e6f4ff; color: #1677ff; }
+.module-asset    { background: #f6ffed; color: #52c41a; }
+.module-consumable { background: #fff7e6; color: #fa8c16; }
+.module-repair   { background: #f9f0ff; color: #722ed1; }
+.module-dispose  { background: #fff1f0; color: #ff4d4f; }
+.module-inventory { background: #e6f7ff; color: #13c2c2; }
+.module-approval { background: #fff1f0; color: #ff4d4f; }
+
+/* 详情抽屉 */
+.detail-section { margin-bottom: 20px; }
+.detail-title { font-size: 14px; font-weight: 600; color: #1a1f35; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
+.detail-row { display: flex; margin-bottom: 8px; font-size: 13px; }
+.detail-label { width: 80px; color: #8c8c8c; flex-shrink: 0; }
+.detail-value { color: #333; word-break: break-all; }
+
+/* 对比框 */
+.diff-box { background: #fafafa; border: 1px solid #e8e8e8; border-radius: 6px; padding: 12px; margin-top: 8px; }
+.diff-old { color: #ff4d4f; text-decoration: line-through; margin-bottom: 4px; }
+.diff-new { color: #52c41a; }
+.diff-label { font-size: 11px; color: #8c8c8c; margin-bottom: 2px; }
+
+/* 空状态 */
+.empty-state { text-align: center; padding: 60px 20px; color: #8c8c8c; }
+.empty-icon { font-size: 48px; margin-bottom: 16px; }
+.card { overflow-x: auto; max-width: 100%; }
+@media (max-width: 768px) {
+  html, body { overflow-x: hidden; max-width: 100vw; }
+  .sidebar { display: none !important; }
+  .main { margin-left: 0 !important; width: 100% !important; }
+  .content { padding: 12px; }
+  .topbar { padding: 0 12px; }
+  .el-dialog { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; margin: 12px auto !important; }
+}
+</style>
+<!-- 同步守卫：非管理角色不得进入本页面（系统配置 / 操作日志） -->
+<script>
+(function () {
+  try {
+    var raw = localStorage.getItem('ams_user');
+    if (!raw) return;                     // 无缓存交给页面自身的 token 校验
+    var u = JSON.parse(raw);
+    if (!u || !u.role) return;            // 角色未知不猜
+    if (window.amsIsAdmin(u.role)) return; // 管理角色放行
+    if (location.pathname === '/my.html') return;
+    window.location.replace('/my.html');
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+<div id="app">
+  <div class="layout">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">📦</div>
+        <div>
+          <div class="logo-text">资产管理系统</div>
+          <div class="logo-sub">Asset Management</div>
+        </div>
+      </div>
+      <nav class="nav-menu">
+        <div class="nav-group-title">概览</div>
+        <a href="index.html" class="nav-item"><span class="nav-icon">🏠</span><span>仪表盘</span></a>
+        <div class="nav-group-title">快速操作</div>
+        <a href="stock.html" class="nav-item"><span class="nav-icon">📦</span><span>出入库</span></a>
+        <a href="repair.html" class="nav-item"><span class="nav-icon">🔧</span><span>报修</span></a>
+        <a href="dispose.html" class="nav-item"><span class="nav-icon">🗑️</span><span>资产处理</span></a>
+        <div class="nav-group-title">固定资产</div>
+        <a href="index.html" class="nav-item"><span class="nav-icon">🖥️</span><span>资产台账</span></a>
+        <a href="stock.html" class="nav-item"><span class="nav-icon">📋</span><span>出入库记录</span></a>
+        <a href="repair.html" class="nav-item"><span class="nav-icon">🔧</span><span>维修管理</span></a>
+        <a href="dispose.html" class="nav-item"><span class="nav-icon">🗑️</span><span>资产处理记录</span></a>
+        <div class="nav-group-title">耗材管理</div>
+        <a href="index.html#consumables" class="nav-item"><span class="nav-icon">🧪</span><span>耗材台账</span></a>
+        <a href="index.html#consumable_logs" class="nav-item"><span class="nav-icon">📦</span><span>耗材领用记录</span></a>
+        <div class="nav-group-title">管理</div>
+        <a href="approval.html" class="nav-item"><span class="nav-icon">📋</span><span>审批中心</span></a>
+        <a href="inventory.html" class="nav-item"><span class="nav-icon">📦</span><span>资产盘点</span></a>
+        <a href="orders.html" class="nav-item"><span class="nav-icon">🛒</span><span>采购订单</span></a>
+        <div class="nav-group-title">配置</div>
+        <a href="fields.html" class="nav-item"><span class="nav-icon">🔧</span><span>字段维护</span></a>
+        <a href="index.html#employees" class="nav-item"><span class="nav-icon">👥</span><span>用户管理</span></a>
+        <a href="index.html#lark" class="nav-item"><span class="nav-icon">🔔</span><span>飞书通知</span></a>
+        <a href="index.html#settings" class="nav-item"><span class="nav-icon">⚙️</span><span>系统设置</span></a>
+        <div class="nav-group-title">审计</div>
+        <div class="nav-item active"><span class="nav-icon">📊</span><span>操作日志</span></div>
+      </nav>
+    </aside>
+
+    <!-- 主体 -->
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-title">操作日志</div>
+        <el-button :icon="Refresh" @click="load">刷新</el-button>
+      </div>
+
+      <div class="content">
+        <!-- 筛选栏 -->
+        <div class="card" style="padding:16px 20px">
+          <div class="filter-bar">
+            <div class="filter-item">
+              <span class="filter-label">模块</span>
+              <el-select v-model="filter.module" placeholder="全部模块" clearable style="width:130px" @change="load">
+                <el-option label="采购订单" value="order">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#722ed1;flex-shrink:0"></span>采购订单
+                  </span>
+                </el-option>
+                <el-option label="固定资产" value="asset">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#1677ff;flex-shrink:0"></span>固定资产
+                  </span>
+                </el-option>
+                <el-option label="耗材" value="consumable">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#fa8c16;flex-shrink:0"></span>耗材
+                  </span>
+                </el-option>
+                <el-option label="维修" value="repair">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#13c2c2;flex-shrink:0"></span>维修
+                  </span>
+                </el-option>
+                <el-option label="资产处理" value="dispose">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#eb2f96;flex-shrink:0"></span>资产处理
+                  </span>
+                </el-option>
+                <el-option label="资产盘点" value="inventory">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#52c41a;flex-shrink:0"></span>资产盘点
+                  </span>
+                </el-option>
+                <el-option label="审批" value="approval">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#faad14;flex-shrink:0"></span>审批
+                  </span>
+                </el-option>
+              </el-select>
+            </div>
+            <div class="filter-item">
+              <span class="filter-label">操作类型</span>
+              <el-select v-model="filter.action_type" placeholder="全部操作" clearable style="width:120px" @change="load">
+                <el-option label="创建" value="create">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#52c41a;flex-shrink:0"></span>创建
+                  </span>
+                </el-option>
+                <el-option label="修改" value="update">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#1677ff;flex-shrink:0"></span>修改
+                  </span>
+                </el-option>
+                <el-option label="删除" value="delete">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#ff4d4f;flex-shrink:0"></span>删除
+                  </span>
+                </el-option>
+                <el-option label="审批通过" value="approve">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#52c41a;flex-shrink:0"></span>审批通过
+                  </span>
+                </el-option>
+                <el-option label="审批拒绝" value="reject">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#ff4d4f;flex-shrink:0"></span>审批拒绝
+                  </span>
+                </el-option>
+                <el-option label="上传" value="upload">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#722ed1;flex-shrink:0"></span>上传
+                  </span>
+                </el-option>
+                <el-option label="到货" value="arrive">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#13c2c2;flex-shrink:0"></span>到货
+                  </span>
+                </el-option>
+                <el-option label="取消" value="cancel">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#8c8c8c;flex-shrink:0"></span>取消
+                  </span>
+                </el-option>
+                <el-option label="申请" value="apply">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#faad14;flex-shrink:0"></span>申请
+                  </span>
+                </el-option>
+              </el-select>
+            </div>
+            <div class="filter-item">
+              <span class="filter-label">操作人</span>
+              <el-input v-model="filter.operator" placeholder="搜索操作人" clearable style="width:120px" @clear="load" @keyup.enter="load" />
+            </div>
+            <div class="filter-item" style="flex:1">
+              <span class="filter-label">关键词</span>
+              <el-input v-model="filter.keyword" placeholder="搜索目标名称/编号" clearable style="width:180px" @clear="load" @keyup.enter="load" />
+            </div>
+            <div class="filter-item">
+              <span class="filter-label">日期范围</span>
+              <el-date-picker v-model="filter.dateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width:240px" @change="load" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 日志列表 -->
+        <div class="card" style="padding:0">
+          <div v-loading="loading" style="min-height:400px">
+            <table class="log-table">
+              <thead>
+                <tr>
+                  <th style="width:155px">时间</th>
+                  <th style="width:80px">模块</th>
+                  <th style="width:80px">操作</th>
+                  <th style="width:120px">目标编号</th>
+                  <th>目标名称</th>
+                  <th style="width:80px">操作人</th>
+                  <th style="width:70px">角色</th>
+                  <th style="width:70px">IP</th>
+                  <th style="width:70px">详情</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="logs.length === 0 && !loading">
+                  <td colspan="9">
+                    <div class="empty-state">
+                      <div class="empty-icon">📋</div>
+                      <div>暂无操作日志</div>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-for="log in logs" :key="log.id">
+                  <td style="white-space:nowrap;color:#8c8c8c;font-size:12px">{{ log.created_at }}</td>
+                  <td><span class="module-tag" :class="'module-' + log.module">{{ moduleName(log.module) }}</span></td>
+                  <td><span class="action-tag" :class="'action-' + log.action_type">{{ actionName(log.action_type) }}</span></td>
+                  <td style="font-family:monospace;font-size:12px;color:#1677ff">{{ log.target_no || '-' }}</td>
+                  <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" :title="log.target_name">{{ log.target_name || '-' }}</td>
+                  <td style="white-space:nowrap">{{ log.operator }}</td>
+                  <td><span :style="{color: log.operator_role === '超管' ? '#ff4d4f' : '#666'}">{{ log.operator_role }}</span></td>
+                  <td style="font-size:12px;color:#8c8c8c">{{ log.ip_address || '-' }}</td>
+                  <td>
+                    <el-button link type="primary" size="small" @click="showDetail(log)">查看</el-button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="padding:14px 20px;display:flex;justify-content:flex-end;border-top:1px solid #f0f0f0">
+            <el-pagination
+              v-model:current-page="page"
+              v-model:page-size="pageSize"
+              :total="total"
+              :page-sizes="[20, 50, 100]"
+              layout="total, sizes, prev, pager, next"
+              @change="load"
+              @size-change="load"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 详情抽屉 -->
+  <el-drawer v-model="detailDrw" title="日志详情" size="550px" destroy-on-close>
+    <template v-if="currentLog">
+      <div class="detail-section">
+        <div class="detail-title">基本信息</div>
+        <div class="detail-row"><span class="detail-label">日志ID</span><span class="detail-value">{{ currentLog.id }}</span></div>
+        <div class="detail-row"><span class="detail-label">操作时间</span><span class="detail-value">{{ currentLog.created_at }}</span></div>
+        <div class="detail-row"><span class="detail-label">模块</span><span class="detail-value"><span class="module-tag" :class="'module-' + currentLog.module">{{ moduleName(currentLog.module) }}</span></span></div>
+        <div class="detail-row"><span class="detail-label">操作类型</span><span class="detail-value"><span class="action-tag" :class="'action-' + currentLog.action_type">{{ actionName(currentLog.action_type) }}</span></span></div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-title">操作对象</div>
+        <div class="detail-row"><span class="detail-label">目标类型</span><span class="detail-value">{{ currentLog.target_type || '-' }}</span></div>
+        <div class="detail-row"><span class="detail-label">目标ID</span><span class="detail-value">{{ currentLog.target_id || '-' }}</span></div>
+        <div class="detail-row"><span class="detail-label">目标编号</span><span class="detail-value" style="color:#1677ff;font-family:monospace">{{ currentLog.target_no || '-' }}</span></div>
+        <div class="detail-row"><span class="detail-label">目标名称</span><span class="detail-value">{{ currentLog.target_name || '-' }}</span></div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-title">操作人员</div>
+        <div class="detail-row"><span class="detail-label">操作人</span><span class="detail-value">{{ currentLog.operator }}</span></div>
+        <div class="detail-row"><span class="detail-label">角色</span><span class="detail-value" :style="{color: currentLog.operator_role === '超管' ? '#ff4d4f' : '#333'}">{{ currentLog.operator_role }}</span></div>
+        <div class="detail-row"><span class="detail-label">IP地址</span><span class="detail-value">{{ currentLog.ip_address || '-' }}</span></div>
+        <div class="detail-row"><span class="detail-label">浏览器</span><span class="detail-value" style="font-size:12px;color:#8c8c8c;word-break:break-all">{{ currentLog.user_agent || '-' }}</span></div>
+      </div>
+
+      <!-- 修改前后对比 -->
+      <div v-if="currentLog.before_data || currentLog.after_data" class="detail-section">
+        <div class="detail-title">数据变更</div>
+        <div class="diff-box">
+          <div v-if="currentLog.before_data">
+            <div class="diff-label">修改前</div>
+            <div v-for="(val, key) in currentLog.before_data" :key="key" class="diff-old">{{ key }}: {{ formatValue(val) }}</div>
+          </div>
+          <div v-if="currentLog.after_data" style="margin-top:12px">
+            <div class="diff-label">修改后</div>
+            <div v-for="(val, key) in currentLog.after_data" :key="key" class="diff-new">{{ key }}: {{ formatValue(val) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 详情信息 -->
+      <div v-if="currentLog.detail" class="detail-section">
+        <div class="detail-title">详细信息</div>
+        <div class="diff-box" style="background:#fff">
+          <div v-for="(val, key) in currentLog.detail" :key="key" style="margin-bottom:6px;font-size:13px">
+            <span style="color:#8c8c8c">{{ key }}:</span>
+            <span style="color:#333;margin-left:8px">{{ formatDetail(val) }}</span>
+          </div>
+        </div>
+      </div>
+    </template>
+  </el-drawer>
+</div>
+
+<script>
+const { createApp, ref, reactive, computed, onMounted } = Vue;
+const { ElMessage } = ElementPlus;
+const { Refresh } = ElementPlusIconsVue;
+const API = '/api';
+
+createApp({
+  setup() {
+    const logs = ref([]);
+    const total = ref(0);
+    const page = ref(1);
+    const pageSize = ref(50);
+    const loading = ref(false);
+    
+    const filter = reactive({
+      module: '',
+      action_type: '',
+      operator: '',
+      keyword: '',
+      dateRange: null
+    });
+    
+    const detailDrw = ref(false);
+    const currentLog = ref(null);
+    
+    async function load() {
+      loading.value = true;
+      try {
+        const params = new URLSearchParams({
+          page: page.value,
+          page_size: pageSize.value
+        });
+        if (filter.module) params.append('module', filter.module);
+        if (filter.action_type) params.append('action_type', filter.action_type);
+        if (filter.operator) params.append('operator', filter.operator);
+        if (filter.keyword) params.append('keyword', filter.keyword);
+        if (filter.dateRange && filter.dateRange.length === 2) {
+          params.append('start_date', filter.dateRange[0]);
+          params.append('end_date', filter.dateRange[1]);
+        }
+        
+        const r = await fetch(`${API}/logs?${params}`, { headers: authHeaders() });
+        const d = await r.json();
+        if (d.success) {
+          logs.value = d.data;
+          total.value = d.total;
+        }
+      } finally {
+        loading.value = false;
+      }
+    }
+    
+    function moduleName(module) {
+      const names = {
+        order: '采购订单',
+        asset: '固定资产',
+        consumable: '耗材',
+        repair: '维修',
+        dispose: '资产处理',
+        inventory: '资产盘点',
+        approval: '审批'
+      };
+      return names[module] || module;
+    }
+    
+    function actionName(action) {
+      const names = {
+        create: '创建',
+        update: '修改',
+        delete: '删除',
+        approve: '审批通过',
+        reject: '审批拒绝',
+        upload: '上传',
+        arrive: '到货',
+        cancel: '取消',
+        apply: '申请'
+      };
+      return names[action] || action;
+    }
+    
+    function showDetail(log) {
+      currentLog.value = log;
+      detailDrw.value = true;
+    }
+    
+    function formatValue(val) {
+      if (val === null || val === undefined) return '(空)';
+      if (typeof val === 'object') return JSON.stringify(val);
+      return String(val);
+    }
+    
+    function formatDetail(val) {
+      if (Array.isArray(val)) return val.join(', ');
+      if (typeof val === 'object') return JSON.stringify(val);
+      return String(val);
+    }
+    
+    function authHeaders() {
+      const token = localStorage.getItem('ams_token');
+      return token ? { 'Authorization': `Bearer ${token}` } : {};
+    }
+    
+    function checkAuth() {
+      const token = localStorage.getItem('ams_token');
+      if (!token) { window.location.href = '/login.html'; }
+    }
+    
+    onMounted(() => {
+      checkAuth();
+      load();
+    });
+    
+    return {
+      logs, total, page, pageSize, loading, filter, load,
+      detailDrw, currentLog, showDetail, moduleName, actionName,
+      formatValue, formatDetail, Refresh
+    };
+  }
+}).use(ElementPlus, { locale: ElementPlusLocaleZhCn }).use(ElementPlusIconsVue).mount('#app');
+</script>
+</body>
+</html>
