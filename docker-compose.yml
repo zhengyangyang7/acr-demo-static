@@ -1,0 +1,10 @@
+name: weekly-update
+
+services:
+  weekly-update:
+    build: .
+    ports:
+      - "8765:8765"
+    environment:
+      ZHOUDU_BIND: "0.0.0.0"
+      ZHOUDU_PORT: "8765"
